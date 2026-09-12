@@ -20,9 +20,11 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Recycling
+import com.example.data.model.AppVersionManager
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +74,10 @@ fun MainScreen(viewModel: GarbageViewModel) {
     val voiceQueryResult by viewModel.voiceQueryResult.collectAsStateWithLifecycle()
     val isSpeaking by viewModel.isSpeaking.collectAsStateWithLifecycle()
 
+    val userApiKey by viewModel.userApiKey.collectAsStateWithLifecycle()
+    val isApiKeyDialogOpen by viewModel.isApiKeyDialogOpen.collectAsStateWithLifecycle()
+    val isVersionDialogOpen by viewModel.isVersionDialogOpen.collectAsStateWithLifecycle()
+
     val snackbarHostState = remember { SnackbarHostState() }
 
     // GPS Permission Launcher
@@ -107,17 +113,44 @@ fun MainScreen(viewModel: GarbageViewModel) {
                             imageVector = Icons.Default.Recycling,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(26.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "ゴミ分別",
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleLarge
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            onClick = { viewModel.openVersionDialog() },
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.testTag("top_version_badge")
+                        ) {
+                            Text(
+                                text = "v${AppVersionManager.CURRENT_VERSION_NAME}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 },
                 actions = {
+                    // API Key Settings Button
+                    IconButton(
+                        onClick = { viewModel.openApiKeyDialog() },
+                        modifier = Modifier.testTag("top_api_key_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Key,
+                            contentDescription = "Gemini APIキー設定",
+                            tint = if (userApiKey.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        )
+                    }
+
                     Surface(
                         onClick = { viewModel.openMunicipalityPicker() },
                         color = MaterialTheme.colorScheme.primaryContainer,
@@ -231,7 +264,10 @@ fun MainScreen(viewModel: GarbageViewModel) {
                             )
                         )
                     },
-                    onViewCalendar = { viewModel.setSelectedTab(1) }
+                    onViewCalendar = { viewModel.setSelectedTab(1) },
+                    userApiKey = userApiKey,
+                    onOpenApiKeySettings = { viewModel.openApiKeyDialog() },
+                    onOpenVersionInfo = { viewModel.openVersionDialog() }
                 )
                 1 -> CalendarScreen(
                     municipality = currentMunicipality,
@@ -328,5 +364,21 @@ fun MainScreen(viewModel: GarbageViewModel) {
             viewModel.setSelectedTab(1)
         }
     )
+
+    // User Gemini API Key Settings Dialog
+    if (isApiKeyDialogOpen) {
+        ApiKeySettingsDialog(
+            currentApiKey = userApiKey,
+            onSaveApiKey = { viewModel.saveApiKey(it) },
+            onDismiss = { viewModel.closeApiKeyDialog() }
+        )
+    }
+
+    // App Version & Changelog Dialog
+    if (isVersionDialogOpen) {
+        AppVersionDialog(
+            onDismiss = { viewModel.closeVersionDialog() }
+        )
+    }
 }
 

@@ -29,14 +29,16 @@ class WasteClassifierEngine(
     suspend fun analyzeImage(
         bitmap: Bitmap?,
         municipality: Municipality,
-        fallbackItemKeyword: String? = null
+        fallbackItemKeyword: String? = null,
+        customApiKey: String? = null
     ): AnalysisOutput {
         if (bitmap != null) {
             val aiResult = geminiService.analyzeWasteImage(
                 bitmap = bitmap,
                 municipalityName = municipality.name,
                 prefectureName = municipality.prefecture,
-                oversizedThresholdCm = municipality.oversizedThresholdCm
+                oversizedThresholdCm = municipality.oversizedThresholdCm,
+                customApiKey = customApiKey
             )
 
             when (aiResult) {

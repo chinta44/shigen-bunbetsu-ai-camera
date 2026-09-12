@@ -26,9 +26,10 @@ class GeminiWasteService {
         bitmap: Bitmap,
         municipalityName: String,
         prefectureName: String,
-        oversizedThresholdCm: Int
+        oversizedThresholdCm: Int,
+        customApiKey: String? = null
     ): WasteAiAnalysisResult = withContext(Dispatchers.IO) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = if (!customApiKey.isNullOrBlank()) customApiKey.trim() else BuildConfig.GEMINI_API_KEY
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             // No API key provided, signal to fallback
             return@withContext WasteAiAnalysisResult.KeyMissing

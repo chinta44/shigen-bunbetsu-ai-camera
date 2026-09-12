@@ -31,8 +31,15 @@ class GarbageRepository(
             MunicipalityData.findById(id)
         }
 
+    val userApiKeyFlow: Flow<String> = configDao.getConfig("gemini_api_key")
+        .map { it?.value.orEmpty() }
+
     suspend fun saveSelectedMunicipality(municipalityId: String) {
         configDao.setConfig(AppConfigEntity("selected_municipality_id", municipalityId))
+    }
+
+    suspend fun saveUserApiKey(key: String) {
+        configDao.setConfig(AppConfigEntity("gemini_api_key", key.trim()))
     }
 
     suspend fun autoDetectMunicipalityWithGps(): Municipality? {
@@ -46,9 +53,15 @@ class GarbageRepository(
     suspend fun analyzeWaste(
         bitmap: Bitmap?,
         keyword: String?,
-        municipality: Municipality
+        municipality: Municipality,
+        customApiKey: String? = null
     ): WasteClassifierEngine.AnalysisOutput {
-        return classifierEngine.analyzeImage(bitmap, municipality, keyword)
+        val key = if (!customApiKey.isNullOrBlank()) {
+            customApiKey
+        } else {
+            userApiKeyFlow.firstOrNull()
+        }
+        return classifierEngine.analyzeImage(bitmap, municipality, keyword, key)
     }
 
     fun resolveQuestions(

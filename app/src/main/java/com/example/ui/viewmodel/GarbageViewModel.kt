@@ -41,6 +41,15 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     val historyList: StateFlow<List<ScanHistoryEntity>> = repository.scanHistoryFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val userApiKey: StateFlow<String> = repository.userApiKeyFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    private val _isApiKeyDialogOpen = MutableStateFlow(false)
+    val isApiKeyDialogOpen: StateFlow<Boolean> = _isApiKeyDialogOpen.asStateFlow()
+
+    private val _isVersionDialogOpen = MutableStateFlow(false)
+    val isVersionDialogOpen: StateFlow<Boolean> = _isVersionDialogOpen.asStateFlow()
+
     private val _isAnalyzing = MutableStateFlow(false)
     val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
 
@@ -125,6 +134,34 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
 
     fun clearStatusNotification() {
         _statusNotification.value = null
+    }
+
+    fun openApiKeyDialog() {
+        _isApiKeyDialogOpen.value = true
+    }
+
+    fun closeApiKeyDialog() {
+        _isApiKeyDialogOpen.value = false
+    }
+
+    fun saveApiKey(newKey: String) {
+        viewModelScope.launch {
+            repository.saveUserApiKey(newKey.trim())
+            _isApiKeyDialogOpen.value = false
+            if (newKey.isBlank()) {
+                _statusNotification.value = "Gemini APIキーを解除しました（自治体辞書・ルールベースで動作します）"
+            } else {
+                _statusNotification.value = "Gemini APIキーを保存しました（AI画像分析が有効化されました）"
+            }
+        }
+    }
+
+    fun openVersionDialog() {
+        _isVersionDialogOpen.value = true
+    }
+
+    fun closeVersionDialog() {
+        _isVersionDialogOpen.value = false
     }
 
     /**
