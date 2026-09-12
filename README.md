@@ -1,0 +1,91 @@
+# 資源・ゴミ分別AIカメラ (shigen-bunbetsu-ai-camera)
+
+[![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-blue.svg)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen.svg)](https://developer.android.com/jetpack/compose)
+[![Version](https://img.shields.io/badge/Version-v1.1.0-orange.svg)](https://github.com/)
+
+カメラで撮影した写真や商品のバーコードから、お住まいの自治体ルールに応じた正しいゴミ・資源の分別区分を瞬時に判定・案内する Android アプリケーションです。  
+愛知県愛西市をはじめとする自治体ごとの分別基準、収集カレンダー、指定ごみ袋・粗大ごみ処理シールの実物見本写真ガイドを搭載しています。
+
+---
+
+## 📸 主な機能
+
+1. **AI画像認識によるゴミ分別判定**
+   - カメラ撮影または端末のアルバム写真から、対象の品目・素材をAIが解析。
+   - 自治体の分別ルールに照合して「可燃ごみ」「プラスチック製容器包装」「不燃ごみ」「粗大ごみ」「資源ごみ」などを瞬時に特定。
+   - サイズや分解可否、汚れの度合いに応じた追加質問フロー（材質・サイズ確認）にも対応。
+
+2. **指定ごみ袋・粗大ごみシールの実物写真見本表示**
+   - 判定結果画面に「こんな袋・シールですよ」という写真見本を自動表示。
+   - 袋の色、仕様、購入先（コンビニ・スーパーなど）、出し方の注意点までわかりやすく解説。
+
+3. **バーコード読み取り & キーワード検索**
+   - 商品のJAN/EANバーコードから分別を特定。
+   - 豊富な自治体品目辞書によるリアルタイムキーワード検索。
+
+4. **利用者の独自 Gemini APIキー 登録機能**
+   - アプリ右上の鍵アイコンから、利用者が自身で取得した無料の Gemini APIキーを簡単登録・変更可能。
+   - キー未登録の場合でも、内蔵の自治体品目辞書・ルールベース判定が利用可能。
+
+5. **収集カレンダー & 次回収集日カウントダウン**
+   - お住まいの地区ごとの収集曜日を一覧表示。
+   - 次の収集日まであと何日かを一目で把握可能。
+
+6. **GPS自治体自動判定**
+   - 現在地の位置情報から対応市区町村を自動判定・提案。
+
+---
+
+## 🛠 技術スタック
+
+- **言語**: Kotlin (Coroutines / StateFlow)
+- **UIフレームワーク**: Jetpack Compose (Material Design 3)
+- **アーキテクチャ**: MVVM (Model-View-ViewModel) + Repository Pattern
+- **ローカルデータベース**: Room Database (履歴・設定保存)
+- **AIエンジン**: Google Gemini API (gemini-2.5-flash / multimodal)
+- **画像処理**: Android Bitmap / CameraX / Photo Picker
+- **ビルドツール**: Gradle (Kotlin DSL)
+
+---
+
+## 🔑 Gemini APIキーの設定方法
+
+1. [Google AI Studio](https://aistudio.google.com/app/apikey) にアクセスし、Googleアカウントでログインします。
+2. **「Create API key」** をクリックして無料の APIキーを取得します。
+3. アプリ右上の **「鍵アイコン 🔑」** をタップし、取得したキー（`AIzaSy...`）を貼り付けて「保存する」を押してください。
+
+---
+
+## 💻 ビルド & 実行方法
+
+### 必要要件
+- Android Studio Ladybug 以上
+- JDK 17 以上
+- Android SDK 34 / 36
+
+### 手順
+```bash
+# 1. リポジトリをクローン
+git clone https://github.com/<あなたのユーザー名>/shigen-bunbetsu-ai-camera.git
+
+# 2. ディレクトリへ移動
+cd shigen-bunbetsu-ai-camera
+
+# 3. ビルド実行
+gradle assembleDebug
+```
+
+---
+
+## 📋 バージョン情報
+
+- **v1.1.0** (2026-09-12):
+  - 愛西市分別ルール・収集カレンダーの正式サポート
+  - ユーザー独自 Gemini APIキー登録機能の追加
+  - 指定ごみ袋・粗大ごみ処理シール見本写真の表示機能
+  - カメラ権限および起動安全保護（アルバムフォールバック）
+  - バージョン確認ダイアログの追加
+- **v1.0.0** (2026-09-10):
+  - 初回リリース

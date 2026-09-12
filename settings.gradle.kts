@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "ゴミ分別"
+rootProject.name = "shigen-bunbetsu-ai-camera"
 
 include(":app")
