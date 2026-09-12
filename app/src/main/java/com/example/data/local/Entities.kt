@@ -1,0 +1,26 @@
+package com.example.data.local
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "scan_history")
+data class ScanHistoryEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val itemName: String,
+    val categoryName: String,
+    val categoryId: String,
+    val colorHex: Long,
+    val municipalityName: String,
+    val disposalAdvice: String,
+    val nextDateText: String,
+    val daysRemainingText: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "app_config")
+data class AppConfigEntity(
+    @PrimaryKey
+    val key: String,
+    val value: String
+)

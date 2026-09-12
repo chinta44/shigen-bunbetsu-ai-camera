@@ -1,0 +1,6 @@
+{
+  "name": "ゴミ分別",
+  "description": "写真からゴミをAI判別し、自治体ルールと収集日を案内。大きさや材質の追加質問で正しく分別できるアプリ",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

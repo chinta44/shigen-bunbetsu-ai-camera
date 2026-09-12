@@ -1,0 +1,332 @@
+package com.example.ui.screens
+
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.viewmodel.GarbageViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(viewModel: GarbageViewModel) {
+    val currentMunicipality by viewModel.currentMunicipality.collectAsStateWithLifecycle()
+    val historyList by viewModel.historyList.collectAsStateWithLifecycle()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsStateWithLifecycle()
+    val currentBitmap by viewModel.currentBitmap.collectAsStateWithLifecycle()
+    val activeResult by viewModel.activeResult.collectAsStateWithLifecycle()
+    val pendingClarification by viewModel.pendingClarification.collectAsStateWithLifecycle()
+    val isMunicipalityPickerOpen by viewModel.isMunicipalityPickerOpen.collectAsStateWithLifecycle()
+    val statusNotification by viewModel.statusNotification.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
+
+    val isBarcodeScannerOpen by viewModel.isBarcodeScannerOpen.collectAsStateWithLifecycle()
+    val isBarcodeScanning by viewModel.isBarcodeScanning.collectAsStateWithLifecycle()
+    val activeBarcodeResult by viewModel.activeBarcodeResult.collectAsStateWithLifecycle()
+
+    val isVoiceAssistantOpen by viewModel.isVoiceAssistantOpen.collectAsStateWithLifecycle()
+    val voiceQueryResult by viewModel.voiceQueryResult.collectAsStateWithLifecycle()
+    val isSpeaking by viewModel.isSpeaking.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // GPS Permission Launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            viewModel.detectGpsLocation()
+        } else {
+            viewModel.openMunicipalityPicker()
+        }
+    }
+
+    LaunchedEffect(statusNotification) {
+        statusNotification?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearStatusNotification()
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Recycling,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "ゴミ分別",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                },
+                actions = {
+                    Surface(
+                        onClick = { viewModel.openMunicipalityPicker() },
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.testTag("top_municipality_chip")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = currentMunicipality.name,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        },
+                        modifier = Modifier.testTag("top_gps_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GpsFixed,
+                            contentDescription = "GPS現在地判定",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { viewModel.setSelectedTab(0) },
+                    icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = "分別スキャン") },
+                    label = { Text("分別判定") },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.testTag("tab_scan")
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { viewModel.setSelectedTab(1) },
+                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "収集日") },
+                    label = { Text("収集日程") },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.testTag("tab_calendar")
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick = { viewModel.setSelectedTab(2) },
+                    icon = { Icon(Icons.Default.History, contentDescription = "履歴") },
+                    label = { Text("分別履歴") },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.testTag("tab_history")
+                )
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (selectedTab) {
+                0 -> ScanScreen(
+                    municipality = currentMunicipality,
+                    isAnalyzing = isAnalyzing,
+                    currentBitmap = currentBitmap,
+                    searchQuery = searchQuery,
+                    onSearchQueryChanged = { viewModel.setSearchQuery(it) },
+                    onSearchSubmit = { viewModel.analyzeKeyword(it) },
+                    onImageCaptured = { viewModel.analyzeImage(it) },
+                    onOpenBarcodeScanner = { viewModel.openBarcodeScanner() },
+                    onOpenVoiceAssistant = { viewModel.openVoiceAssistant() },
+                    onChangeMunicipality = { viewModel.openMunicipalityPicker() },
+                    onGpsClicked = {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    },
+                    onViewCalendar = { viewModel.setSelectedTab(1) }
+                )
+                1 -> CalendarScreen(
+                    municipality = currentMunicipality,
+                    onChangeMunicipality = { viewModel.openMunicipalityPicker() }
+                )
+                2 -> HistoryScreen(
+                    historyList = historyList,
+                    onDeleteItem = { viewModel.deleteHistoryItem(it) },
+                    onClearAll = { viewModel.clearAllHistory() },
+                    onStartScan = { viewModel.setSelectedTab(0) }
+                )
+            }
+        }
+    }
+
+    // Modal Clarification Dialog (迷う物は追加質問)
+    pendingClarification?.let { state ->
+        ClarificationDialog(
+            state = state,
+            municipalityName = currentMunicipality.name,
+            onAnswerSelected = { qId, optId ->
+                viewModel.setClarificationAnswer(qId, optId)
+            },
+            onSubmit = { viewModel.submitClarificationAnswers() },
+            onDismiss = { viewModel.dismissClarification() }
+        )
+    }
+
+    // Modal Sorting Result Sheet (次回の収集日表示・ルール)
+    activeResult?.let { result ->
+        SortingResultSheet(
+            result = result,
+            onDismiss = { viewModel.dismissResult() },
+            onViewCalendar = {
+                viewModel.dismissResult()
+                viewModel.setSelectedTab(1)
+            }
+        )
+    }
+
+    // Municipality Picker Bottom Sheet
+    if (isMunicipalityPickerOpen) {
+        MunicipalityPickerSheet(
+            currentMunicipality = currentMunicipality,
+            onMunicipalitySelected = { municipalityId ->
+                viewModel.selectMunicipality(municipalityId)
+            },
+            onGpsClicked = {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            },
+            onDismiss = { viewModel.closeMunicipalityPicker() }
+        )
+    }
+
+    // Barcode Scanner Dialog
+    BarcodeScanDialog(
+        isOpen = isBarcodeScannerOpen,
+        onDismiss = { viewModel.closeBarcodeScanner() },
+        isScanning = isBarcodeScanning,
+        onBarcodeScanned = { viewModel.scanBarcodeValue(it) },
+        onBarcodeBitmapCaptured = { viewModel.scanBarcodeBitmap(it) }
+    )
+
+    // Barcode Analysis Result Sheet
+    activeBarcodeResult?.let { result ->
+        BarcodeResultSheet(
+            result = result,
+            onDismiss = { viewModel.dismissBarcodeResult() },
+            onViewCalendar = {
+                viewModel.dismissBarcodeResult()
+                viewModel.setSelectedTab(1)
+            },
+            onSpeak = { viewModel.speakText(it) }
+        )
+    }
+
+    // Voice Assistant Dialog & Audio Responder
+    VoiceAssistantDialog(
+        isOpen = isVoiceAssistantOpen,
+        onDismiss = { viewModel.closeVoiceAssistant() },
+        voiceResult = voiceQueryResult,
+        isSpeaking = isSpeaking,
+        isAnalyzing = isAnalyzing,
+        onQuerySubmitted = { viewModel.processVoiceQuery(it, autoSpeak = true) },
+        onSpeakText = { viewModel.speakText(it) },
+        onStopSpeaking = { viewModel.stopSpeaking() },
+        onViewCalendar = {
+            viewModel.closeVoiceAssistant()
+            viewModel.setSelectedTab(1)
+        }
+    )
+}
+
