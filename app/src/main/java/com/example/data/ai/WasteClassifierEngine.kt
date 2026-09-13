@@ -122,6 +122,33 @@ class WasteClassifierEngine(
             )
         }
 
+        // 0-C. Smartphones, Small Electronics, Lithium-ion Devices (スマートフォン・小型家電・携帯端末)
+        if (q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯電話") || q.contains("携帯") ||
+            q.contains("タブレット") || q.contains("スマートウォッチ") || q.contains("小型家電") ||
+            q.contains("充電器") || q.contains("アダプター") || q.contains("ガラケー") || q.contains("電子辞書") ||
+            q.contains("イヤホン") || q.contains("ワイヤレスイヤホン")
+        ) {
+            val smallAppCat = municipality.categories.firstOrNull { it.id == "small_appliance" }
+                ?: MunicipalityData.CAT_SMALL_APPLIANCE
+
+            val isPhone = q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯")
+            val displayName = if (isPhone) "スマートフォン" else if (q.contains("タブレット")) "タブレット端末" else query.trim()
+            return AnalysisOutput.Resolved(
+                SortingResult(
+                    itemName = displayName,
+                    categoryName = smallAppCat.name,
+                    categoryId = smallAppCat.id,
+                    colorHex = smallAppCat.colorHex,
+                    municipalityName = municipality.name,
+                    nextDateText = "市役所・量販店等の回収BOX（開館中随時）",
+                    daysRemainingText = "常時持込可",
+                    disposalAdvice = "【発火注意・集積所排出禁止】\nスマートフォン等の充電式電子機器にはリチウムイオン電池が内蔵されており、可燃ごみ・不燃ごみとして出すと収集車や処理施設での重大な火災原因となります。\n\n必ず端末内のデータを初期化・消去し、市役所・支所・公民館・家電量販店などに設置されている「使用済小型家電回収ボックス」に投入してください（袋不要・無料）。各携帯キャリアショップでも無償回収しています。",
+                    sizeMaterialNotes = "${municipality.name}の小型家電リサイクル制度（拠点回収）に準拠しています。袋の購入は不要です。",
+                    requiresReservation = false
+                )
+            )
+        }
+
         // 1. Ambiguous Plastic Container / Case / Box (The user's explicit example)
         if (q.contains("プラスチック") || q.contains("ケース") || q.contains("プラ") || q.contains("衣装") || q.contains("タッパー") || q.contains("バケツ") || q.contains("箱")) {
             return AnalysisOutput.NeedsClarification(
@@ -529,12 +556,40 @@ class WasteClassifierEngine(
                 val advice = root.optString("disposalAdvice", "自治体の指定袋に入れて出してください。")
                 val reason = root.optString("reason", "")
 
-                val matchedCat = municipality.categories.firstOrNull {
-                    categoryHint.contains(it.shortName) || it.name.contains(categoryHint)
-                } ?: municipality.categories.firstOrNull { it.id == "burnable" } ?: MunicipalityData.CAT_BURNABLE
+                // High-priority safety check: Smartphones, tablets, batteries & small appliances must NEVER fall back to burnable!
+                val isSmallAppliance = itemName.contains("スマホ") || itemName.contains("スマートフォン") ||
+                        itemName.contains("携帯") || itemName.contains("タブレット") || itemName.contains("小型家電") ||
+                        itemName.contains("充電器") || itemName.contains("スマートウォッチ") || itemName.contains("電子辞書") ||
+                        categoryHint.contains("小型家電") || categoryHint.contains("拠点") || advice.contains("回収ボックス")
+
+                val isHazardousBattery = itemName.contains("電池") || itemName.contains("バッテリー") ||
+                        categoryHint.contains("危険") || categoryHint.contains("電池") || categoryHint.contains("有害")
+
+                val matchedCat = when {
+                    isSmallAppliance -> municipality.categories.firstOrNull { it.id == "small_appliance" }
+                        ?: MunicipalityData.CAT_SMALL_APPLIANCE
+                    isHazardousBattery -> municipality.categories.firstOrNull { it.id == "hazardous" }
+                        ?: MunicipalityData.CAT_HAZARDOUS
+                    else -> municipality.categories.firstOrNull {
+                        categoryHint.contains(it.shortName) || it.name.contains(categoryHint)
+                    } ?: municipality.categories.firstOrNull { it.id == "burnable" } ?: MunicipalityData.CAT_BURNABLE
+                }
 
                 val sched = municipality.schedules.firstOrNull { it.categoryId == matchedCat.id }
                 val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+                val nextDateText = if (matchedCat.id == "small_appliance") {
+                    "市役所・量販店等の回収BOX（開館中随時）"
+                } else {
+                    next.dateText + next.dayOfWeekText
+                }
+                val daysRemainingText = if (matchedCat.id == "small_appliance") "常時持込可" else next.daysRemainingText
+
+                val finalAdvice = if (matchedCat.id == "small_appliance" && !advice.contains("回収ボックス")) {
+                    "【集積所排出禁止・発火注意】個人情報・データを初期化・消去し、市役所や公民館、家電量販店等の小型家電回収ボックスへ直接投入してください（袋不要・無料）。\n$advice"
+                } else {
+                    advice
+                }
 
                 return AnalysisOutput.Resolved(
                     SortingResult(
@@ -543,9 +598,9 @@ class WasteClassifierEngine(
                         categoryId = matchedCat.id,
                         colorHex = matchedCat.colorHex,
                         municipalityName = municipality.name,
-                        nextDateText = next.dateText + next.dayOfWeekText,
-                        daysRemainingText = next.daysRemainingText,
-                        disposalAdvice = advice,
+                        nextDateText = nextDateText,
+                        daysRemainingText = daysRemainingText,
+                        disposalAdvice = finalAdvice,
                         sizeMaterialNotes = reason,
                         requiresReservation = matchedCat.id == "oversized"
                     )
@@ -572,14 +627,21 @@ class WasteClassifierEngine(
         val schedule = municipality.schedules.firstOrNull { it.categoryId == category.id }
         val next = schedule?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
 
+        val nextDateText = if (category.id == "small_appliance") {
+            "市役所・量販店等の回収BOX（開館中随時）"
+        } else {
+            next.dateText + next.dayOfWeekText
+        }
+        val daysRemainingText = if (category.id == "small_appliance") "常時持込可" else next.daysRemainingText
+
         return SortingResult(
             itemName = itemName.trim().ifBlank { "指定品目" },
             categoryName = category.name,
             categoryId = category.id,
             colorHex = category.colorHex,
             municipalityName = municipality.name,
-            nextDateText = next.dateText + next.dayOfWeekText,
-            daysRemainingText = next.daysRemainingText,
+            nextDateText = nextDateText,
+            daysRemainingText = daysRemainingText,
             disposalAdvice = customAdvice ?: "${category.name}として自治体指定の袋または回収場所へ出してください。",
             sizeMaterialNotes = "ユーザーによる訂正・手動指定の分別ルール",
             requiresReservation = category.id == "oversized"

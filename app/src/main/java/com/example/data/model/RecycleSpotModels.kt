@@ -18,13 +18,14 @@ enum class DropoffCategory(
             val lowerCat = categoryId.lowercase()
             val text = (categoryId + " " + keyword).lowercase()
             return when {
+                lowerCat == "small_appliance" -> SMALL_APPLIANCE
+                lowerCat == "hazardous" -> BATTERY
                 text.contains("電池") || text.contains("バッテリー") || text.contains("battery") -> BATTERY
                 text.contains("蛍光") || text.contains("電球") || text.contains("水銀") || text.contains("ライト") -> FLUORESCENT
                 text.contains("小型家電") || text.contains("スマホ") || text.contains("携帯") || text.contains("コード") || text.contains("充電器") -> SMALL_APPLIANCE
                 text.contains("インク") || text.contains("プリンタ") || text.contains("トナー") -> INK_CARTRIDGE
                 text.contains("トレー") || text.contains("牛乳パック") || text.contains("ペットボトル") -> FOOD_CONTAINER
                 text.contains("古着") || text.contains("衣類") || text.contains("服") -> CLOTHES
-                lowerCat == "hazardous" -> BATTERY
                 else -> null
             }
         }

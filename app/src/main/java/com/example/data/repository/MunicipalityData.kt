@@ -79,6 +79,16 @@ object MunicipalityData {
         generalRules = "スプレー缶は中身を使い切り火気のないところで穴あけ不要で透明袋へ。モバイルバッテリーは家電量販店回収BOXへ。"
     )
 
+    val CAT_SMALL_APPLIANCE = WasteCategory(
+        id = "small_appliance",
+        name = "小型家電・拠点回収（ボックス回収）",
+        shortName = "小型家電",
+        icon = "devices",
+        colorHex = 0xFF1976D2L, // Blue
+        containerType = "回収ボックス投入（袋不要・無料）",
+        generalRules = "スマートフォン、携帯電話、タブレット、小型家電、充電器等。個人情報を消去し、市役所・支所・公民館・量販店等の専用回収ボックスへ投入してください。リチウムイオン電池内蔵のため集積所ごみ出しは不可です。"
+    )
+
     val NAGOYA = Municipality(
         id = "nagoya",
         name = "名古屋市",
@@ -93,7 +103,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
@@ -103,7 +114,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 水曜日"),
             CollectionSchedule("non_burnable", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1)), "第1 木曜日（月1回）"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前電話・ネット予約制（月1回定期収集地区別）"),
-            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日（不燃・拠点回収）")
+            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日（不燃・拠点回収）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・環境事業所等の専用回収ボックス（開庁時間中随時）")
         )
     )
 
@@ -121,7 +133,8 @@ object MunicipalityData {
             CAT_NON_BURNABLE,
             CAT_PAPER,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.MONDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・金曜日"),
@@ -131,7 +144,8 @@ object MunicipalityData {
             CollectionSchedule("non_burnable", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 水曜日"),
             CollectionSchedule("paper", DayOfWeek.SATURDAY, ScheduleRecurrence.Weekly, "毎週 土曜日（集団回収）"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前申込制（粗大ごみ受付センター）"),
-            CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 水曜日（小さな金属類・乾電池）")
+            CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 水曜日（小さな金属類・乾電池）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・地区センター等の小型家電回収BOX")
         )
     )
 
@@ -149,7 +163,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
@@ -159,7 +174,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.WEDNESDAY, ScheduleRecurrence.Weekly, "毎週 水曜日"),
             CollectionSchedule("non_burnable", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "粗大ごみ受付センター予約制"),
-            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 木曜日（蛍光管・電池）")
+            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 木曜日（蛍光管・電池）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・出張所等回収BOX")
         )
     )
 
@@ -177,7 +193,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.MONDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・木曜日"),
@@ -187,7 +204,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.FRIDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 金曜日"),
             CollectionSchedule("non_burnable", DayOfWeek.FRIDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 金曜日"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "粗大ごみ収集受付センター予約制"),
-            CollectionSchedule("hazardous", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "資源ごみと同日回収")
+            CollectionSchedule("hazardous", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "資源ごみと同日回収"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・環境事業センター等回収BOX")
         )
     )
 
@@ -205,7 +223,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
@@ -215,7 +234,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.MONDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 月曜日"),
             CollectionSchedule("non_burnable", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 木曜日"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "大型ごみ受付センター予約制"),
-            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日（有害ごみ）")
+            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日（有害ごみ）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・地区リサイクルセンター回収BOX")
         )
     )
 
@@ -232,7 +252,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.SUNDAY, ScheduleRecurrence.Weekly, "毎週 日曜日・水曜日（夜間収集）"),
@@ -241,7 +262,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.SATURDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 土曜日"),
             CollectionSchedule("non_burnable", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(3)), "第3 木曜日（月1回）"),
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "粗大ごみ受付センター（LINE・電話予約）"),
-            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(3)), "不燃ごみと同日回収")
+            CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(3)), "不燃ごみと同日回収"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・市民センター等回収BOX")
         )
     )
 
@@ -259,7 +281,8 @@ object MunicipalityData {
             CAT_PAPER,
             CAT_NON_BURNABLE,
             CAT_OVERSIZED,
-            CAT_HAZARDOUS
+            CAT_HAZARDOUS,
+            CAT_SMALL_APPLIANCE
         ),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.MONDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・木曜日（指定可燃物袋）"),
@@ -269,7 +292,8 @@ object MunicipalityData {
             CollectionSchedule("paper", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 水曜日（資源古紙・段ボール）"),
             CollectionSchedule("non_burnable", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2)), "第2 水曜日（指定不燃物袋）"),
             CollectionSchedule("oversized", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "集積所:第1水曜(200円券) / 戸別回収:第3水曜(予約制・500円券)"),
-            CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2)), "第2 水曜日（不燃・危険物・電池類）")
+            CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2)), "第2 水曜日（不燃・危険物・電池類）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・支所・公民館等の専用回収ボックス（開館中随時）")
         )
     )
 
@@ -280,13 +304,14 @@ object MunicipalityData {
         district = "市内全域",
         oversizedThresholdCm = 50,
         plasticRuleNotes = "プラスチック製容器包装（プラマーク付）は指定収集。指定袋に入らないものは粗大ごみ。",
-        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS),
+        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS, CAT_SMALL_APPLIANCE),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
             CollectionSchedule("burnable", DayOfWeek.FRIDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
             CollectionSchedule("plastic", DayOfWeek.WEDNESDAY, ScheduleRecurrence.Weekly, "毎週 水曜日"),
             CollectionSchedule("bottle_can", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日"),
-            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（電話申込）")
+            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（電話申込）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・公共施設等の回収BOX")
         )
     )
 
@@ -297,12 +322,13 @@ object MunicipalityData {
         district = "市内全域",
         oversizedThresholdCm = 50,
         plasticRuleNotes = "プラスチック製容器包装は分別回収。八穂クリーンセンター利用。",
-        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS),
+        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS, CAT_SMALL_APPLIANCE),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.MONDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・木曜日"),
             CollectionSchedule("burnable", DayOfWeek.THURSDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・木曜日"),
             CollectionSchedule("plastic", DayOfWeek.WEDNESDAY, ScheduleRecurrence.Weekly, "毎週 水曜日"),
-            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制または八穂持込")
+            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制または八穂持込"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "総合社会教育センター等回収BOX")
         )
     )
 
@@ -313,12 +339,13 @@ object MunicipalityData {
         district = "市内全域",
         oversizedThresholdCm = 45,
         plasticRuleNotes = "プラスチック製容器包装と製品プラスチックの資源回収。",
-        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS),
+        categories = listOf(CAT_BURNABLE, CAT_PLASTIC, CAT_BOTTLE_CAN, CAT_PAPER, CAT_NON_BURNABLE, CAT_OVERSIZED, CAT_HAZARDOUS, CAT_SMALL_APPLIANCE),
         schedules = listOf(
             CollectionSchedule("burnable", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
             CollectionSchedule("burnable", DayOfWeek.FRIDAY, ScheduleRecurrence.Weekly, "毎週 火曜日・金曜日"),
             CollectionSchedule("plastic", DayOfWeek.WEDNESDAY, ScheduleRecurrence.Weekly, "毎週 水曜日"),
-            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（粗大ごみ受付）")
+            CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（粗大ごみ受付）"),
+            CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・出張所等回収BOX")
         )
     )
 
@@ -352,7 +379,8 @@ object MunicipalityData {
                 CAT_PAPER,
                 CAT_NON_BURNABLE,
                 CAT_OVERSIZED,
-                CAT_HAZARDOUS
+                CAT_HAZARDOUS,
+                CAT_SMALL_APPLIANCE
             ),
             schedules = listOf(
                 CollectionSchedule("burnable", DayOfWeek.MONDAY, ScheduleRecurrence.Weekly, "毎週 月曜日・木曜日"),
@@ -360,7 +388,8 @@ object MunicipalityData {
                 CollectionSchedule("plastic", DayOfWeek.WEDNESDAY, ScheduleRecurrence.Weekly, "毎週 水曜日"),
                 CollectionSchedule("bottle_can", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日"),
                 CollectionSchedule("paper", DayOfWeek.SATURDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 土曜日"),
-                CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（各自治体窓口・クリーンセンター）")
+                CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（各自治体窓口・クリーンセンター）"),
+                CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・量販店等の回収BOX（開館中随時）")
             )
         )
     }
