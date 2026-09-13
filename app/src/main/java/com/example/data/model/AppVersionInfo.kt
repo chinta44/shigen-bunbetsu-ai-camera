@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.1.0"
-    const val CURRENT_VERSION_CODE = 2
+    const val CURRENT_VERSION_NAME = "1.2.0"
+    const val CURRENT_VERSION_CODE = 3
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.2.0",
+            versionCode = 3,
+            releaseDate = "2026-09-13",
+            title = "判定結果の訂正機能・対象物指定・撮影＆判定フィードバック・全国自治体AI自動生成・拠点マップ",
+            changes = listOf(
+                "判定結果の手動訂正機能の追加（誤判定品名の修正や分別区分の手動直接指定）",
+                "画面内に複数物が映っている場合の「判定対象物の指定」機能（例: 長財布、メガネ、缶等を指定可能）",
+                "撮影直後および判定結果通知時の振動（バイブレーション）＆効果音機能（設定で個別にON/OFF切替可能）",
+                "第１計画: 自治体名入力によるAI分別ルール＆カレンダー自動生成機能・手動微調整機能",
+                "第２計画: 乾電池・蛍光管・小型家電・古紙等のリサイクル拠点・回収ボックス案内マップ機能"
+            )
+        ),
         VersionRelease(
             versionName = "1.1.0",
             versionCode = 2,

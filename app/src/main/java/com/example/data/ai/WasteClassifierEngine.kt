@@ -30,7 +30,8 @@ class WasteClassifierEngine(
         bitmap: Bitmap?,
         municipality: Municipality,
         fallbackItemKeyword: String? = null,
-        customApiKey: String? = null
+        customApiKey: String? = null,
+        targetItemHint: String? = null
     ): AnalysisOutput {
         if (bitmap != null) {
             val aiResult = geminiService.analyzeWasteImage(
@@ -38,7 +39,8 @@ class WasteClassifierEngine(
                 municipalityName = municipality.name,
                 prefectureName = municipality.prefecture,
                 oversizedThresholdCm = municipality.oversizedThresholdCm,
-                customApiKey = customApiKey
+                customApiKey = customApiKey,
+                targetItemHint = targetItemHint
             )
 
             when (aiResult) {
@@ -56,7 +58,9 @@ class WasteClassifierEngine(
         }
 
         // Rule-based fallback or keyword based analysis
-        val query = fallbackItemKeyword?.trim() ?: "プラスチックケース"
+        val query = targetItemHint?.trim()?.ifBlank { null }
+            ?: fallbackItemKeyword?.trim()
+            ?: "プラスチックケース"
         return analyzeByKeyword(query, municipality)
     }
 
@@ -65,6 +69,58 @@ class WasteClassifierEngine(
      */
     fun analyzeByKeyword(query: String, municipality: Municipality): AnalysisOutput {
         val q = query.lowercase()
+
+        // 0. Leather goods / Wallets / Pouches (革財布・長財布・レザー製品)
+        if (q.contains("財布") || q.contains("革") || q.contains("レザー") || q.contains("ウォレット") || q.contains("定期入れ") || q.contains("名刺入れ")) {
+            val burnableCat = municipality.categories.firstOrNull { it.id == "burnable" }
+                ?: MunicipalityData.CAT_BURNABLE
+            val schedule = municipality.schedules.firstOrNull { it.categoryId == burnableCat.id }
+            val nextInfo = schedule?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+            val displayName = if (q.contains("長財布")) "革製の長財布" else if (q.contains("財布")) "財布（革・布・合皮）" else query.trim()
+            return AnalysisOutput.Resolved(
+                SortingResult(
+                    itemName = displayName,
+                    categoryName = burnableCat.name,
+                    categoryId = burnableCat.id,
+                    colorHex = burnableCat.colorHex,
+                    municipalityName = municipality.name,
+                    nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                    daysRemainingText = nextInfo.daysRemainingText,
+                    disposalAdvice = "本革・合皮・布製の長財布や小銭入れは【可燃ごみ（燃やすごみ）】です。\nファスナー金具やホックなど取り外しにくい小さな金属部品は、無理に外さずそのまま出して問題ありません。\n※一辺が${municipality.oversizedThresholdCm}cmを超える特大ケース類の場合は粗大ごみ扱いとなります。",
+                    sizeMaterialNotes = "${municipality.name}の分別基準（皮革・繊維・合成皮革は可燃ごみ）に準拠しています。",
+                    requiresReservation = false
+                )
+            )
+        }
+
+        // 0-B. Eyeglasses & Eyeglass cases (メガネ・メガネケース)
+        if (q.contains("メガネ") || q.contains("眼鏡") || q.contains("サングラス")) {
+            val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val schedule = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
+            val nextInfo = schedule?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+            val isCase = q.contains("ケース")
+            return AnalysisOutput.Resolved(
+                SortingResult(
+                    itemName = if (isCase) "メガネケース" else "眼鏡・メガネ",
+                    categoryName = nonBurnableCat.name,
+                    categoryId = nonBurnableCat.id,
+                    colorHex = nonBurnableCat.colorHex,
+                    municipalityName = municipality.name,
+                    nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                    daysRemainingText = nextInfo.daysRemainingText,
+                    disposalAdvice = if (isCase) {
+                        "プラスチック製や金属製、金属芯入りのメガネケースは【不燃ごみ（燃えないごみ・陶器金属ガラス）】です。\n布や本革製で金属部品がないソフトケースの場合は【可燃ごみ】として出せます。"
+                    } else {
+                        "フレームやレンズに金属・ガラス・硬質プラが使われているため【不燃ごみ】です。ガラスレンズが破損している場合は紙などに包み「キケン」と表示してください。"
+                    },
+                    sizeMaterialNotes = "${municipality.name}の分別ルールに準拠しています。",
+                    requiresReservation = false
+                )
+            )
+        }
 
         // 1. Ambiguous Plastic Container / Case / Box (The user's explicit example)
         if (q.contains("プラスチック") || q.contains("ケース") || q.contains("プラ") || q.contains("衣装") || q.contains("タッパー") || q.contains("バケツ") || q.contains("箱")) {
@@ -498,5 +554,35 @@ class WasteClassifierEngine(
         } catch (e: Exception) {
             return null
         }
+    }
+
+    /**
+     * Create or correct sorting result with user-specified category and item name
+     */
+    fun createCustomSortingResult(
+        itemName: String,
+        categoryId: String,
+        municipality: Municipality,
+        customAdvice: String? = null
+    ): SortingResult {
+        val category = municipality.categories.firstOrNull { it.id == categoryId }
+            ?: municipality.categories.firstOrNull()
+            ?: MunicipalityData.CAT_BURNABLE
+
+        val schedule = municipality.schedules.firstOrNull { it.categoryId == category.id }
+        val next = schedule?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+        return SortingResult(
+            itemName = itemName.trim().ifBlank { "指定品目" },
+            categoryName = category.name,
+            categoryId = category.id,
+            colorHex = category.colorHex,
+            municipalityName = municipality.name,
+            nextDateText = next.dateText + next.dayOfWeekText,
+            daysRemainingText = next.daysRemainingText,
+            disposalAdvice = customAdvice ?: "${category.name}として自治体指定の袋または回収場所へ出してください。",
+            sizeMaterialNotes = "ユーザーによる訂正・手動指定の分別ルール",
+            requiresReservation = category.id == "oversized"
+        )
     }
 }

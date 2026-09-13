@@ -36,7 +36,8 @@ class GeminiWasteService {
         municipalityName: String,
         prefectureName: String,
         oversizedThresholdCm: Int,
-        customApiKey: String? = null
+        customApiKey: String? = null,
+        targetItemHint: String? = null
     ): WasteAiAnalysisResult = withContext(Dispatchers.IO) {
         val apiKey = if (!customApiKey.isNullOrBlank()) customApiKey.trim() else getPresetApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
@@ -51,16 +52,23 @@ class GeminiWasteService {
             scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val base64Image = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
 
+            val targetFocusInstruction = if (!targetItemHint.isNullOrBlank()) {
+                "\n【最重要指示】画面内に複数の物体が写っている場合、ユーザーが指定した対象「$targetItemHint」または指定枠内の物体を特定・分別してください。他の物や背景は無視してください。"
+            } else {
+                "\n画面内に複数の物体が写っている場合は、中央または最も手前にある代表的な不用品1点を特定してください。"
+            }
+
             val prompt = """
                 あなたは日本のゴミ分別専門家AIです。
                 ユーザーは「$prefectureName $municipalityName」のゴミ分別ルールに従って分別したいと考えています。
                 （この自治体の粗大ごみ基準は一辺 $oversizedThresholdCm cm以上です）
 
                 添付された画像のごみ・不用品を特定し、分別判定を行ってください。
+                $targetFocusInstruction
                 
-                もし、材質（硬質プラスチック、軟質プラ、金属混在など）や大きさ（${oversizedThresholdCm}cmを超えるか等）によって
+                もし、材質（硬質プラスチック、軟質プラ、革、布、金属混在など）や大きさ（${oversizedThresholdCm}cmを超えるか等）によって
                 自治体の分別区分が分かれる場合は、必ず「isAmbiguous: true」とし、ユーザーに尋ねるべき追加質問を1〜2個生成してください。
-                （例：プラスチックケース、衣装ケース、小型家電、フライパン、傘、クッション、スプレー缶など）
+                （例：プラスチックケース、衣装ケース、小型家電、フライパン、傘、クッション、スプレー缶、財布など）
 
                 必ず以下のJSONフォーマットのみで回答してください：
                 {

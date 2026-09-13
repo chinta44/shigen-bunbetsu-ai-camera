@@ -17,6 +17,7 @@ import com.example.data.repository.MunicipalityData
 import com.example.data.voice.VoiceQueryProcessor
 import com.example.data.voice.VoiceQueryResult
 import com.example.data.voice.VoiceTtsManager
+import com.example.ui.util.FeedbackManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +44,55 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
 
     val userApiKey: StateFlow<String> = repository.userApiKeyFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    // Feedback Manager for Shutter & Result (Sound + Vibration)
+    private val feedbackManager = FeedbackManager(application)
+
+    val isHapticsEnabled: StateFlow<Boolean> = repository.hapticsEnabledFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val isSoundEnabled: StateFlow<Boolean> = repository.soundEnabledFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun toggleHaptics() {
+        viewModelScope.launch {
+            val next = !isHapticsEnabled.value
+            repository.saveHapticsEnabled(next)
+            _statusNotification.value = if (next) "振動フィードバックをONにしました" else "振動フィードバックをOFFにしました"
+        }
+    }
+
+    fun toggleSound() {
+        viewModelScope.launch {
+            val next = !isSoundEnabled.value
+            repository.saveSoundEnabled(next)
+            _statusNotification.value = if (next) "効果音フィードバックをONにしました" else "効果音フィードバックをOFFにしました"
+        }
+    }
+
+    fun setHapticsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveHapticsEnabled(enabled)
+        }
+    }
+
+    fun setSoundEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveSoundEnabled(enabled)
+        }
+    }
+
+    fun triggerShutterFeedback() {
+        feedbackManager.playShutterFeedback(isHapticsEnabled.value, isSoundEnabled.value)
+    }
+
+    // Target Item Specification (For multiple objects in frame)
+    private val _targetItemHint = MutableStateFlow("")
+    val targetItemHint: StateFlow<String> = _targetItemHint.asStateFlow()
+
+    fun setTargetItemHint(hint: String) {
+        _targetItemHint.value = hint
+    }
 
     private val _isApiKeyDialogOpen = MutableStateFlow(false)
     val isApiKeyDialogOpen: StateFlow<Boolean> = _isApiKeyDialogOpen.asStateFlow()
@@ -199,21 +249,34 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     /**
      * Process an image taken from camera or gallery
      */
-    fun analyzeImage(bitmap: Bitmap) {
+    fun analyzeImage(bitmap: Bitmap, targetHint: String? = null) {
+        // Immediate feedback upon shooting / capture
+        triggerShutterFeedback()
+
         _currentBitmap.value = bitmap
+        val effectiveHint = targetHint?.trim()?.ifBlank { null } ?: _targetItemHint.value.trim().ifBlank { null }
+        if (effectiveHint != null) {
+            _targetItemHint.value = effectiveHint
+        }
         _isAnalyzing.value = true
         _activeResult.value = null
         _pendingClarification.value = null
 
         viewModelScope.launch {
             val municipality = currentMunicipality.value
-            val output = repository.analyzeWaste(bitmap, null, municipality)
+            val output = repository.analyzeWaste(
+                bitmap = bitmap,
+                keyword = null,
+                municipality = municipality,
+                targetItemHint = effectiveHint
+            )
             _isAnalyzing.value = false
 
             when (output) {
                 is WasteClassifierEngine.AnalysisOutput.Resolved -> {
                     _activeResult.value = output.result
                     repository.saveToHistory(output.result)
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
                 }
                 is WasteClassifierEngine.AnalysisOutput.NeedsClarification -> {
                     _pendingClarification.value = ClarificationState(
@@ -222,6 +285,7 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
                         questions = output.questions,
                         answers = emptyMap()
                     )
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
                 }
                 is WasteClassifierEngine.AnalysisOutput.Error -> {
                     _statusNotification.value = "判定に失敗しました: ${output.message}"
@@ -247,6 +311,7 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
                 is WasteClassifierEngine.AnalysisOutput.Resolved -> {
                     _activeResult.value = output.result
                     repository.saveToHistory(output.result)
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
                 }
                 is WasteClassifierEngine.AnalysisOutput.NeedsClarification -> {
                     _pendingClarification.value = ClarificationState(
@@ -255,11 +320,73 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
                         questions = output.questions,
                         answers = emptyMap()
                     )
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
                 }
                 is WasteClassifierEngine.AnalysisOutput.Error -> {
                     _statusNotification.value = output.message
                 }
             }
+        }
+    }
+
+    /**
+     * Correct misclassified item name and re-analyze with AI & dictionary
+     * e.g. User corrects "メガネケース" -> "革製の長財布"
+     */
+    fun correctItemNameAndReanalyze(correctedName: String) {
+        val trimmed = correctedName.trim()
+        if (trimmed.isBlank()) return
+
+        _isAnalyzing.value = true
+        _pendingClarification.value = null
+        _targetItemHint.value = trimmed
+
+        viewModelScope.launch {
+            val municipality = currentMunicipality.value
+            val output = repository.analyzeWaste(
+                bitmap = _currentBitmap.value,
+                keyword = trimmed,
+                municipality = municipality,
+                targetItemHint = trimmed
+            )
+            _isAnalyzing.value = false
+
+            when (output) {
+                is WasteClassifierEngine.AnalysisOutput.Resolved -> {
+                    val finalResult = output.result.copy(itemName = trimmed)
+                    _activeResult.value = finalResult
+                    repository.saveToHistory(finalResult)
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
+                    _statusNotification.value = "品名を「$trimmed」に訂正し、分別ルールを更新しました"
+                }
+                is WasteClassifierEngine.AnalysisOutput.NeedsClarification -> {
+                    _pendingClarification.value = ClarificationState(
+                        itemName = trimmed,
+                        note = output.initialNote,
+                        questions = output.questions,
+                        answers = emptyMap()
+                    )
+                    feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
+                }
+                is WasteClassifierEngine.AnalysisOutput.Error -> {
+                    _statusNotification.value = "再判定に失敗しました: ${output.message}"
+                }
+            }
+        }
+    }
+
+    /**
+     * Directly set category and item name manually
+     */
+    fun manuallySetCategory(itemName: String, categoryId: String, customAdvice: String? = null) {
+        val trimmed = itemName.trim().ifBlank { _activeResult.value?.itemName ?: "指定品目" }
+        val municipality = currentMunicipality.value
+        val newResult = repository.createCustomResult(trimmed, categoryId, municipality, customAdvice)
+        _activeResult.value = newResult
+        viewModelScope.launch {
+            repository.saveToHistory(newResult)
+            feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
+            _statusNotification.value = "「$trimmed」を「${newResult.categoryName}」として保存しました"
         }
     }
 
@@ -464,6 +591,7 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     override fun onCleared() {
         super.onCleared()
         ttsManager.shutdown()
+        feedbackManager.release()
     }
 }
 

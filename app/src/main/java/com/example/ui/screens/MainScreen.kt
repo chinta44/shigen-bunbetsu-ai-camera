@@ -71,6 +71,10 @@ fun MainScreen(viewModel: GarbageViewModel) {
     val isBarcodeScanning by viewModel.isBarcodeScanning.collectAsStateWithLifecycle()
     val activeBarcodeResult by viewModel.activeBarcodeResult.collectAsStateWithLifecycle()
 
+    val isHapticsEnabled by viewModel.isHapticsEnabled.collectAsStateWithLifecycle()
+    val isSoundEnabled by viewModel.isSoundEnabled.collectAsStateWithLifecycle()
+    val targetItemHint by viewModel.targetItemHint.collectAsStateWithLifecycle()
+
     val isVoiceAssistantOpen by viewModel.isVoiceAssistantOpen.collectAsStateWithLifecycle()
     val voiceQueryResult by viewModel.voiceQueryResult.collectAsStateWithLifecycle()
     val isSpeaking by viewModel.isSpeaking.collectAsStateWithLifecycle()
@@ -272,7 +276,7 @@ fun MainScreen(viewModel: GarbageViewModel) {
                     searchQuery = searchQuery,
                     onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                     onSearchSubmit = { viewModel.analyzeKeyword(it) },
-                    onImageCaptured = { viewModel.analyzeImage(it) },
+                    onImageCaptured = { viewModel.analyzeImage(it, targetItemHint) },
                     onOpenBarcodeScanner = { viewModel.openBarcodeScanner() },
                     onOpenVoiceAssistant = { viewModel.openVoiceAssistant() },
                     onChangeMunicipality = { viewModel.openMunicipalityPicker() },
@@ -287,7 +291,13 @@ fun MainScreen(viewModel: GarbageViewModel) {
                     onViewCalendar = { viewModel.setSelectedTab(1) },
                     userApiKey = userApiKey,
                     onOpenApiKeySettings = { viewModel.openApiKeyDialog() },
-                    onOpenVersionInfo = { viewModel.openVersionDialog() }
+                    onOpenVersionInfo = { viewModel.openVersionDialog() },
+                    isHapticsEnabled = isHapticsEnabled,
+                    isSoundEnabled = isSoundEnabled,
+                    onToggleHaptics = { viewModel.toggleHaptics() },
+                    onToggleSound = { viewModel.toggleSound() },
+                    targetItemHint = targetItemHint,
+                    onTargetItemHintChanged = { viewModel.setTargetItemHint(it) }
                 )
                 1 -> CalendarScreen(
                     municipality = currentMunicipality,
@@ -329,6 +339,7 @@ fun MainScreen(viewModel: GarbageViewModel) {
     activeResult?.let { result ->
         SortingResultSheet(
             result = result,
+            municipality = currentMunicipality,
             onDismiss = { viewModel.dismissResult() },
             onViewCalendar = {
                 viewModel.dismissResult()
@@ -337,6 +348,12 @@ fun MainScreen(viewModel: GarbageViewModel) {
             onViewRecycleMap = { cat ->
                 viewModel.dismissResult()
                 viewModel.navigateToRecycleMap(cat)
+            },
+            onCorrectItemName = { correctedName ->
+                viewModel.correctItemNameAndReanalyze(correctedName)
+            },
+            onManuallySetCategory = { itemName, categoryId ->
+                viewModel.manuallySetCategory(itemName, categoryId)
             }
         )
     }

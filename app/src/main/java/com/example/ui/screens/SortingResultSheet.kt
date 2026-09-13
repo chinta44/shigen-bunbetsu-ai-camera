@@ -53,19 +53,40 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DesignatedBagProvider
 import com.example.data.model.DropoffCategory
+import com.example.data.model.Municipality
 import com.example.data.model.SortingResult
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SortingResultSheet(
     result: SortingResult,
+    municipality: Municipality? = null,
     onDismiss: () -> Unit,
     onViewCalendar: () -> Unit,
-    onViewRecycleMap: (DropoffCategory?) -> Unit = {}
+    onViewRecycleMap: (DropoffCategory?) -> Unit = {},
+    onCorrectItemName: (String) -> Unit = {},
+    onManuallySetCategory: (itemName: String, categoryId: String) -> Unit = { _, _ -> }
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dropoffCat = DropoffCategory.fromCategoryIdOrKeyword(result.categoryId, result.itemName + " " + result.disposalAdvice)
+
+    var isEditingItem by remember { mutableStateOf(false) }
+    var editedItemName by remember(result.itemName) { mutableStateOf(result.itemName) }
+    var showManualCategories by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -119,19 +140,175 @@ fun SortingResultSheet(
                 }
             }
 
-            // Target Item Name
-            Column {
-                Text(
-                    text = "品名",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = result.itemName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            // Target Item Name Card with Correction / Editing Support
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "判定された品名",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = result.itemName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                isEditingItem = !isEditingItem
+                                if (!isEditingItem) {
+                                    showManualCategories = false
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.testTag("edit_item_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "品名を訂正",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isEditingItem) "閉じる" else "品名を訂正",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    // Editable Section (User can correct e.g. "メガネケース" -> "革製の長財布")
+                    AnimatedVisibility(visible = isEditingItem) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.background,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = "誤判定された品名を正しく修正して再判定できます（例: 革製の長財布）",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = editedItemName,
+                                onValueChange = { editedItemName = it },
+                                label = { Text("正しい品名を入力") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("correct_item_name_input"),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (editedItemName.isNotBlank()) {
+                                            onCorrectItemName(editedItemName.trim())
+                                            isEditingItem = false
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .testTag("reanalyze_corrected_item_button"),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("AIで再判定", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+
+                                if (municipality != null && municipality.categories.isNotEmpty()) {
+                                    OutlinedButton(
+                                        onClick = { showManualCategories = !showManualCategories },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("direct_category_pick_button"),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Tune,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("分別を選ぶ", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+
+                            // Direct category selection chips
+                            AnimatedVisibility(visible = showManualCategories && municipality != null) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 10.dp)
+                                ) {
+                                    Text(
+                                        text = "${municipality?.name}の分別区分を直接指定:",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        municipality?.categories?.forEach { cat ->
+                                            val isCurrent = cat.id == result.categoryId
+                                            FilterChip(
+                                                selected = isCurrent,
+                                                onClick = {
+                                                    val targetName = editedItemName.ifBlank { result.itemName }
+                                                    onManuallySetCategory(targetName, cat.id)
+                                                    isEditingItem = false
+                                                    showManualCategories = false
+                                                },
+                                                label = { Text(cat.name, fontSize = 12.sp) },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = Color(cat.colorHex).copy(alpha = 0.2f),
+                                                    selectedLabelColor = Color(cat.colorHex)
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Classification Verdict Card

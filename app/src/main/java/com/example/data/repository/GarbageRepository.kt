@@ -72,6 +72,20 @@ class GarbageRepository(
         configDao.setConfig(AppConfigEntity("gemini_api_key", key.trim()))
     }
 
+    val hapticsEnabledFlow: Flow<Boolean> = configDao.getConfig("haptics_enabled")
+        .map { it?.value?.toBooleanStrictOrNull() ?: true }
+
+    val soundEnabledFlow: Flow<Boolean> = configDao.getConfig("sound_enabled")
+        .map { it?.value?.toBooleanStrictOrNull() ?: true }
+
+    suspend fun saveHapticsEnabled(enabled: Boolean) {
+        configDao.setConfig(AppConfigEntity("haptics_enabled", enabled.toString()))
+    }
+
+    suspend fun saveSoundEnabled(enabled: Boolean) {
+        configDao.setConfig(AppConfigEntity("sound_enabled", enabled.toString()))
+    }
+
     suspend fun autoDetectMunicipalityWithGps(): Municipality? {
         val detected = locationHelper.getCurrentMunicipality()
         if (detected != null) {
@@ -123,14 +137,24 @@ class GarbageRepository(
         bitmap: Bitmap?,
         keyword: String?,
         municipality: Municipality,
-        customApiKey: String? = null
+        customApiKey: String? = null,
+        targetItemHint: String? = null
     ): WasteClassifierEngine.AnalysisOutput {
         val key = if (!customApiKey.isNullOrBlank()) {
             customApiKey
         } else {
             userApiKeyFlow.firstOrNull()
         }
-        return classifierEngine.analyzeImage(bitmap, municipality, keyword, key)
+        return classifierEngine.analyzeImage(bitmap, municipality, keyword, key, targetItemHint)
+    }
+
+    fun createCustomResult(
+        itemName: String,
+        categoryId: String,
+        municipality: Municipality,
+        customAdvice: String? = null
+    ): SortingResult {
+        return classifierEngine.createCustomSortingResult(itemName, categoryId, municipality, customAdvice)
     }
 
     fun resolveQuestions(
