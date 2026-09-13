@@ -24,3 +24,17 @@ data class AppConfigEntity(
     val key: String,
     val value: String
 )
+
+@Entity(tableName = "custom_municipalities")
+data class CustomMunicipalityEntity(
+    @PrimaryKey
+    val id: String,
+    val name: String,
+    val prefecture: String,
+    val district: String,
+    val oversizedThresholdCm: Int,
+    val plasticRuleNotes: String,
+    val schedulesJson: String,
+    val categoriesJson: String = "",
+    val createdAt: Long = System.currentTimeMillis()
+)

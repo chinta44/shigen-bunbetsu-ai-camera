@@ -5,10 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ScanHistoryEntity::class, AppConfigEntity::class], version = 1, exportSchema = false)
+@Database(entities = [ScanHistoryEntity::class, AppConfigEntity::class, CustomMunicipalityEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun scanHistoryDao(): ScanHistoryDao
     abstract fun appConfigDao(): AppConfigDao
+    abstract fun customMunicipalityDao(): CustomMunicipalityDao
 
     companion object {
         @Volatile

@@ -52,16 +52,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DesignatedBagProvider
+import com.example.data.model.DropoffCategory
 import com.example.data.model.SortingResult
+import androidx.compose.material.icons.filled.Place
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SortingResultSheet(
     result: SortingResult,
     onDismiss: () -> Unit,
-    onViewCalendar: () -> Unit
+    onViewCalendar: () -> Unit,
+    onViewRecycleMap: (DropoffCategory?) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val dropoffCat = DropoffCategory.fromCategoryIdOrKeyword(result.categoryId, result.itemName + " " + result.disposalAdvice)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -367,6 +371,48 @@ fun SortingResultSheet(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                 lineHeight = 18.sp
                             )
+                        }
+                    }
+                }
+            }
+
+            // Dropoff / Collection Box Recommendation Banner
+            if (dropoffCat != null) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(dropoffCat.colorHex).copy(alpha = 0.12f)),
+                    border = BorderStroke(1.5.dp, Color(dropoffCat.colorHex).copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(dropoffCat.iconEmoji, fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "【拠点回収・回収ボックス対象】",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(dropoffCat.colorHex)
+                                )
+                                Text(
+                                    text = "${dropoffCat.title}はゴミ集積所に出さず、市役所や家電量販店等の回収ボックスへ！",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                onDismiss()
+                                onViewRecycleMap(dropoffCat)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(dropoffCat.colorHex))
+                        ) {
+                            Icon(imageVector = Icons.Default.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("📍 近くの${dropoffCat.title}回収拠点を探す", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -2,7 +2,6 @@ package com.example.data.ai
 
 import android.graphics.Bitmap
 import android.util.Base64
-import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -22,6 +21,16 @@ class GeminiWasteService {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
+    private fun getPresetApiKey(): String {
+        return try {
+            val buildConfigClass = Class.forName("com.example.BuildConfig")
+            val field = buildConfigClass.getField("GEMINI_API_KEY")
+            (field.get(null) as? String) ?: ""
+        } catch (_: Throwable) {
+            ""
+        }
+    }
+
     suspend fun analyzeWasteImage(
         bitmap: Bitmap,
         municipalityName: String,
@@ -29,7 +38,7 @@ class GeminiWasteService {
         oversizedThresholdCm: Int,
         customApiKey: String? = null
     ): WasteAiAnalysisResult = withContext(Dispatchers.IO) {
-        val apiKey = if (!customApiKey.isNullOrBlank()) customApiKey.trim() else BuildConfig.GEMINI_API_KEY
+        val apiKey = if (!customApiKey.isNullOrBlank()) customApiKey.trim() else getPresetApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             // No API key provided, signal to fallback
             return@withContext WasteAiAnalysisResult.KeyMissing

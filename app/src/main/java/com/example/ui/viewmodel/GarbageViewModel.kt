@@ -94,6 +94,38 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     private val _voiceQueryResult = MutableStateFlow<VoiceQueryResult?>(null)
     val voiceQueryResult: StateFlow<VoiceQueryResult?> = _voiceQueryResult.asStateFlow()
 
+    // Plan 1: Custom Municipalities & AI Generation
+    val allAvailableMunicipalities: StateFlow<List<Municipality>> = repository.allAvailableMunicipalitiesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MunicipalityData.ALL_MUNICIPALITIES)
+
+    val customMunicipalities: StateFlow<List<Municipality>> = repository.customMunicipalitiesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _isGeneratingMunicipality = MutableStateFlow(false)
+    val isGeneratingMunicipality: StateFlow<Boolean> = _isGeneratingMunicipality.asStateFlow()
+
+    private val _editingMunicipality = MutableStateFlow<Municipality?>(null)
+    val editingMunicipality: StateFlow<Municipality?> = _editingMunicipality.asStateFlow()
+
+    // Plan 2: Recycle Spots
+    private val _recycleCategoryFilter = MutableStateFlow<com.example.data.model.DropoffCategory?>(null)
+    val recycleCategoryFilter: StateFlow<com.example.data.model.DropoffCategory?> = _recycleCategoryFilter.asStateFlow()
+
+    private val _recycleSearchQuery = MutableStateFlow("")
+    val recycleSearchQuery: StateFlow<String> = _recycleSearchQuery.asStateFlow()
+
+    val recycleSpots: StateFlow<List<com.example.data.model.RecycleSpot>> = kotlinx.coroutines.flow.combine(
+        currentMunicipality,
+        _recycleCategoryFilter,
+        _recycleSearchQuery
+    ) { municipality, category, query ->
+        repository.getRecycleSpots(
+            municipalityName = municipality.name,
+            category = category,
+            searchQuery = query
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun setSelectedTab(tab: Int) {
         _selectedTab.value = tab
     }
@@ -368,6 +400,65 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
 
     fun stopSpeaking() {
         ttsManager.stop()
+    }
+
+    // ==========================================
+    // Custom Municipality & AI Generation
+    // ==========================================
+    fun generateMunicipalityWithAi(query: String) {
+        if (query.isBlank()) return
+        _isGeneratingMunicipality.value = true
+        viewModelScope.launch {
+            try {
+                val result = repository.generateMunicipalityWithAi(query)
+                _isGeneratingMunicipality.value = false
+                _isMunicipalityPickerOpen.value = false
+                _statusNotification.value = result.summaryMessage
+            } catch (e: Exception) {
+                _isGeneratingMunicipality.value = false
+                _statusNotification.value = "自治体ルールの生成中にエラーが発生しました: ${e.message}"
+            }
+        }
+    }
+
+    fun openMunicipalityEditor(municipality: Municipality) {
+        _editingMunicipality.value = municipality
+    }
+
+    fun closeMunicipalityEditor() {
+        _editingMunicipality.value = null
+    }
+
+    fun saveCustomMunicipality(municipality: Municipality) {
+        viewModelScope.launch {
+            repository.saveCustomMunicipality(municipality)
+            repository.saveSelectedMunicipality(municipality.id)
+            _editingMunicipality.value = null
+            _statusNotification.value = "「${municipality.name}」の分別ルールとカレンダーを更新しました"
+        }
+    }
+
+    fun deleteCustomMunicipality(id: String) {
+        viewModelScope.launch {
+            repository.deleteCustomMunicipality(id)
+            _statusNotification.value = "自治体設定を削除しました"
+        }
+    }
+
+    // ==========================================
+    // Recycle Drop-Off Spots (Plan 2)
+    // ==========================================
+    fun setRecycleCategoryFilter(category: com.example.data.model.DropoffCategory?) {
+        _recycleCategoryFilter.value = category
+    }
+
+    fun setRecycleSearchQuery(query: String) {
+        _recycleSearchQuery.value = query
+    }
+
+    fun navigateToRecycleMap(category: com.example.data.model.DropoffCategory? = null) {
+        _recycleCategoryFilter.value = category
+        _selectedTab.value = 3
     }
 
     override fun onCleared() {

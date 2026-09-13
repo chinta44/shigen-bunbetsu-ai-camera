@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Recycling
 import com.example.data.model.AppVersionManager
@@ -77,6 +78,15 @@ fun MainScreen(viewModel: GarbageViewModel) {
     val userApiKey by viewModel.userApiKey.collectAsStateWithLifecycle()
     val isApiKeyDialogOpen by viewModel.isApiKeyDialogOpen.collectAsStateWithLifecycle()
     val isVersionDialogOpen by viewModel.isVersionDialogOpen.collectAsStateWithLifecycle()
+
+    val allMunicipalities by viewModel.allAvailableMunicipalities.collectAsStateWithLifecycle()
+    val customMunicipalities by viewModel.customMunicipalities.collectAsStateWithLifecycle()
+    val isGeneratingMunicipality by viewModel.isGeneratingMunicipality.collectAsStateWithLifecycle()
+    val editingMunicipality by viewModel.editingMunicipality.collectAsStateWithLifecycle()
+
+    val recycleSpots by viewModel.recycleSpots.collectAsStateWithLifecycle()
+    val recycleCategoryFilter by viewModel.recycleCategoryFilter.collectAsStateWithLifecycle()
+    val recycleSearchQuery by viewModel.recycleSearchQuery.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -235,6 +245,16 @@ fun MainScreen(viewModel: GarbageViewModel) {
                     ),
                     modifier = Modifier.testTag("tab_history")
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { viewModel.setSelectedTab(3) },
+                    icon = { Icon(Icons.Default.Place, contentDescription = "拠点マップ") },
+                    label = { Text("拠点マップ") },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.testTag("tab_recycle_map")
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -271,13 +291,22 @@ fun MainScreen(viewModel: GarbageViewModel) {
                 )
                 1 -> CalendarScreen(
                     municipality = currentMunicipality,
-                    onChangeMunicipality = { viewModel.openMunicipalityPicker() }
+                    onChangeMunicipality = { viewModel.openMunicipalityPicker() },
+                    onEditSchedule = { viewModel.openMunicipalityEditor(currentMunicipality) }
                 )
                 2 -> HistoryScreen(
                     historyList = historyList,
                     onDeleteItem = { viewModel.deleteHistoryItem(it) },
                     onClearAll = { viewModel.clearAllHistory() },
                     onStartScan = { viewModel.setSelectedTab(0) }
+                )
+                3 -> RecycleMapScreen(
+                    currentMunicipality = currentMunicipality,
+                    spots = recycleSpots,
+                    selectedCategory = recycleCategoryFilter,
+                    onCategorySelected = { viewModel.setRecycleCategoryFilter(it) },
+                    searchQuery = recycleSearchQuery,
+                    onSearchQueryChanged = { viewModel.setRecycleSearchQuery(it) }
                 )
             }
         }
@@ -304,6 +333,10 @@ fun MainScreen(viewModel: GarbageViewModel) {
             onViewCalendar = {
                 viewModel.dismissResult()
                 viewModel.setSelectedTab(1)
+            },
+            onViewRecycleMap = { cat ->
+                viewModel.dismissResult()
+                viewModel.navigateToRecycleMap(cat)
             }
         )
     }
@@ -312,8 +345,20 @@ fun MainScreen(viewModel: GarbageViewModel) {
     if (isMunicipalityPickerOpen) {
         MunicipalityPickerSheet(
             currentMunicipality = currentMunicipality,
+            allMunicipalities = allMunicipalities,
+            customMunicipalities = customMunicipalities,
+            isGenerating = isGeneratingMunicipality,
             onMunicipalitySelected = { municipalityId ->
                 viewModel.selectMunicipality(municipalityId)
+            },
+            onGenerateWithAi = { query ->
+                viewModel.generateMunicipalityWithAi(query)
+            },
+            onEditMunicipality = { m ->
+                viewModel.openMunicipalityEditor(m)
+            },
+            onDeleteCustomMunicipality = { id ->
+                viewModel.deleteCustomMunicipality(id)
             },
             onGpsClicked = {
                 locationPermissionLauncher.launch(
@@ -324,6 +369,17 @@ fun MainScreen(viewModel: GarbageViewModel) {
                 )
             },
             onDismiss = { viewModel.closeMunicipalityPicker() }
+        )
+    }
+
+    // Municipality Edit / Fine-tuning Dialog
+    editingMunicipality?.let { m ->
+        MunicipalityEditDialog(
+            municipality = m,
+            onSave = { updated ->
+                viewModel.saveCustomMunicipality(updated)
+            },
+            onDismiss = { viewModel.closeMunicipalityEditor() }
         )
     }
 

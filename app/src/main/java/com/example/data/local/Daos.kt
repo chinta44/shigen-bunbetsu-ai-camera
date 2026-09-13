@@ -29,3 +29,18 @@ interface AppConfigDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setConfig(config: AppConfigEntity)
 }
+
+@Dao
+interface CustomMunicipalityDao {
+    @Query("SELECT * FROM custom_municipalities ORDER BY createdAt DESC")
+    fun getAllCustomMunicipalities(): Flow<List<CustomMunicipalityEntity>>
+
+    @Query("SELECT * FROM custom_municipalities WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): CustomMunicipalityEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entity: CustomMunicipalityEntity)
+
+    @Query("DELETE FROM custom_municipalities WHERE id = :id")
+    suspend fun deleteById(id: String)
+}

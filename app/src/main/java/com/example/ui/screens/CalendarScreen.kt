@@ -39,10 +39,16 @@ import com.example.data.model.Municipality
 import java.time.DayOfWeek
 import java.time.LocalDate
 
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+
 @Composable
 fun CalendarScreen(
     municipality: Municipality,
-    onChangeMunicipality: () -> Unit
+    onChangeMunicipality: () -> Unit,
+    onEditSchedule: () -> Unit = {}
 ) {
     val today = LocalDate.now()
     val todayDow = today.dayOfWeek
@@ -68,7 +74,7 @@ fun CalendarScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
@@ -91,18 +97,47 @@ fun CalendarScreen(
                         )
                     }
 
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.testTag("calendar_change_city_chip")
-                    ) {
-                        Text(
-                            text = "地区変更",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            onClick = onEditSchedule,
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.testTag("calendar_edit_schedule_chip")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "微調整",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        Surface(
+                            onClick = onChangeMunicipality,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.testTag("calendar_change_city_chip")
+                        ) {
+                            Text(
+                                text = "地区変更",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
                     }
                 }
             }
