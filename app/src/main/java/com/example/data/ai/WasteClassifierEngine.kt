@@ -149,6 +149,84 @@ class WasteClassifierEngine(
             )
         }
 
+        // 0-D. Stainless Steel Water Bottles, Metal Flasks, Thermoses, Tumblers (ステンレス水筒・魔法瓶・金属ボトル)
+        if (q.contains("水筒") || q.contains("ステンレスボトル") || q.contains("魔法瓶") || q.contains("まほうびん") ||
+            q.contains("タンブラー") || (q.contains("ステンレス") && (q.contains("ボトル") || q.contains("マグ") || q.contains("ポット")))
+        ) {
+            val isPlasticBottle = (q.contains("プラスチック") || q.contains("プラ製")) && !q.contains("ステンレス") && !q.contains("金属")
+            if (isPlasticBottle) {
+                // Plastic water bottle
+                val plasticCat = municipality.categories.firstOrNull { it.id == "plastic" }
+                    ?: municipality.categories.firstOrNull { it.id == "burnable" }
+                    ?: MunicipalityData.CAT_PLASTIC
+                val sched = municipality.schedules.firstOrNull { it.categoryId == plasticCat.id }
+                val nextInfo = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+                return AnalysisOutput.Resolved(
+                    SortingResult(
+                        itemName = "プラスチック製水筒・クリアボトル",
+                        categoryName = plasticCat.name,
+                        categoryId = plasticCat.id,
+                        colorHex = plasticCat.colorHex,
+                        municipalityName = municipality.name,
+                        nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                        daysRemainingText = nextInfo.daysRemainingText,
+                        disposalAdvice = "プラスチック素材の水筒は、中をきれいに洗って乾かしてから出してください。ゴムパッキンは外して可燃ごみへ。",
+                        sizeMaterialNotes = "${municipality.name}のプラスチック分別ルールに準拠しています。",
+                        requiresReservation = false
+                    )
+                )
+            } else {
+                // Metal / Stainless steel water bottle (Default for 水筒)
+                val metalCat = municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
+                    ?: MunicipalityData.CAT_NON_BURNABLE
+                val sched = municipality.schedules.firstOrNull { it.categoryId == metalCat.id }
+                val nextInfo = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+                val advice = if (municipality.id == "aisai") {
+                    "ステンレス製水筒・金属ボトル本体は【不燃ごみ（指定不燃物袋）】です（第2水曜日）。\n※プラスチック製のキャップ・フタやシリコンゴムパッキンは外し、キャップは【プラスチック類ごみ（毎週火曜）】、パッキンは【可燃ごみ（月・木）】へ分別してください。"
+                } else {
+                    "${municipality.name}ではステンレス水筒・魔法瓶本体は【${metalCat.name}】です。\n※プラスチック製のフタ・飲み口やシリコンパッキンは取り外し、フタはプラスチック資源（または可燃ごみ）、パッキンは可燃ごみへ分別してお出しください。"
+                }
+
+                return AnalysisOutput.Resolved(
+                    SortingResult(
+                        itemName = if (q.contains("ステンレス")) "ステンレス水筒・マグボトル" else "水筒（ステンレス・金属製）",
+                        categoryName = metalCat.name,
+                        categoryId = metalCat.id,
+                        colorHex = metalCat.colorHex,
+                        municipalityName = municipality.name,
+                        nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                        daysRemainingText = nextInfo.daysRemainingText,
+                        disposalAdvice = advice,
+                        sizeMaterialNotes = "本体は金属製のため可燃ごみには出せません。分解可能な樹脂パーツは外して分別します。",
+                        requiresReservation = false
+                    )
+                )
+            }
+        }
+
+        // 0-E. Umbrellas (傘・ビニール傘・折りたたみ傘)
+        if (q.contains("傘") || q.contains("かさ") || q.contains("アンブレラ")) {
+            val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
+            val nextInfo = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+            return AnalysisOutput.Resolved(
+                SortingResult(
+                    itemName = if (q.contains("折りたたみ")) "折りたたみ傘" else "傘（ビニール傘・雨傘）",
+                    categoryName = nonBurnableCat.name,
+                    categoryId = nonBurnableCat.id,
+                    colorHex = nonBurnableCat.colorHex,
+                    municipalityName = municipality.name,
+                    nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                    daysRemainingText = nextInfo.daysRemainingText,
+                    disposalAdvice = "骨組みに金属が使用されているため【${nonBurnableCat.name}】です。布やビニール部分を骨組みから容易に外せる場合は、布・ビニールは可燃ごみ、骨組みは不燃ごみ（金属）へ分別してください（無理に外せない場合はそのまま不燃ごみへ）。",
+                    sizeMaterialNotes = "${municipality.name}の傘・金属製品ルールに準拠しています。",
+                    requiresReservation = false
+                )
+            )
+        }
+
         // 1. Ambiguous Plastic Container / Case / Box (The user's explicit example)
         if (q.contains("プラスチック") || q.contains("ケース") || q.contains("プラ") || q.contains("衣装") || q.contains("タッパー") || q.contains("バケツ") || q.contains("箱")) {
             return AnalysisOutput.NeedsClarification(
@@ -384,6 +462,33 @@ class WasteClassifierEngine(
             )
         }
 
+        // Metal mix handling (e.g. stainless water bottle with plastic lid, metal parts)
+        if (material == "metal_mix") {
+            val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+            val advice = if (municipality.id == "aisai") {
+                "金属が主材料または金属が混ざった製品は【不燃ごみ（指定不燃物袋）】です（第2水曜日）。\n※プラスチック製のフタやカバーなど簡単に外せる樹脂部分は外して【プラスチック類ごみ（毎週火曜）】へ、外せない場合はそのまま不燃ごみへお出しください。"
+            } else {
+                "${municipality.name}では金属混在の複合製品は【${nonBurnableCat.name}】です。\n※簡単に取り外せるプラスチックパーツはプラスチック資源等へ分別してください。"
+            }
+
+            return SortingResult(
+                itemName = "$itemName（金属混在）",
+                categoryName = nonBurnableCat.name,
+                categoryId = nonBurnableCat.id,
+                colorHex = nonBurnableCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = advice,
+                sizeMaterialNotes = "金属が含まれるため可燃ごみには出せません。取り外せる樹脂パーツは分別を推奨します。",
+                requiresReservation = false
+            )
+        }
+
         // Under threshold: Municipal differences!
         if (municipality.id == "aisai") {
             // Aisai City: Plastic goes to designated plastic bag on Tuesdays
@@ -565,11 +670,26 @@ class WasteClassifierEngine(
                 val isHazardousBattery = itemName.contains("電池") || itemName.contains("バッテリー") ||
                         categoryHint.contains("危険") || categoryHint.contains("電池") || categoryHint.contains("有害")
 
+                // High-priority safeguard: Metal/Stainless water bottles, pots, frypans, umbrellas must NEVER fall back to burnable!
+                val isMetalItem = itemName.contains("ステンレス水筒") || itemName.contains("水筒") ||
+                        itemName.contains("魔法瓶") || itemName.contains("まほうびん") || itemName.contains("タンブラー") ||
+                        (itemName.contains("ステンレス") && !itemName.contains("たわし")) ||
+                        itemName.contains("フライパン") || itemName.contains("やかん") || itemName.contains("鍋") ||
+                        itemName.contains("金物") || itemName.contains("アルミ") || itemName.contains("スチール") ||
+                        itemName.contains("傘") || itemName.contains("包丁") || itemName.contains("ハサミ") ||
+                        categoryHint.contains("不燃") || categoryHint.contains("金属") || categoryHint.contains("金物")
+
+                val isPurePlasticWaterBottle = (itemName.contains("水筒") || itemName.contains("ボトル")) &&
+                        (itemName.contains("プラスチック") || itemName.contains("プラ製")) &&
+                        !itemName.contains("ステンレス") && !itemName.contains("金属")
+
                 val matchedCat = when {
                     isSmallAppliance -> municipality.categories.firstOrNull { it.id == "small_appliance" }
                         ?: MunicipalityData.CAT_SMALL_APPLIANCE
                     isHazardousBattery -> municipality.categories.firstOrNull { it.id == "hazardous" }
                         ?: MunicipalityData.CAT_HAZARDOUS
+                    isMetalItem && !isPurePlasticWaterBottle -> municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
+                        ?: MunicipalityData.CAT_NON_BURNABLE
                     else -> municipality.categories.firstOrNull {
                         categoryHint.contains(it.shortName) || it.name.contains(categoryHint)
                     } ?: municipality.categories.firstOrNull { it.id == "burnable" } ?: MunicipalityData.CAT_BURNABLE

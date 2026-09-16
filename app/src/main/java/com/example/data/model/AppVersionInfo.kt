@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.0"
-    const val CURRENT_VERSION_CODE = 4
+    const val CURRENT_VERSION_NAME = "1.3.1"
+    const val CURRENT_VERSION_CODE = 5
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.1",
+            versionCode = 5,
+            releaseDate = "2026-09-16",
+            title = "ステンレス水筒・複合材質の判定精度大幅向上＆金属品目セーフガード",
+            changes = listOf(
+                "ステンレス水筒・魔法瓶・金属ボトルの分別判定を強化（可燃ごみやプラ単体判定への誤分類を防止）",
+                "本体（金属・不燃ごみ）とフタ・パッキン（プラ・可燃）の分解・分別ガイダンスの詳細化",
+                "AIプロンプトの複合材質（金属＋プラスチック部品）解釈ルール最適化",
+                "鍋・フライパン・傘・刃物などの金属製品が誤って可燃ごみにならないセーフガード機構の追加",
+                "追加質問（材質確認）における「金属混在」選択時の適切な不燃ごみルーティング対応"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.0",
             versionCode = 4,
