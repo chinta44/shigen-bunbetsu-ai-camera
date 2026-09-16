@@ -122,14 +122,18 @@ class WasteClassifierEngine(
             )
         }
 
-        // 0-C. Smartphones, Small Electronics, Fans, Lithium-ion Devices (スマートフォン・小型扇風機・サーキュレーター・小型家電)
+        // 0-C. Smartphones, Small Electronics, Circuit Boards, Fans, Lithium-ion Devices (電子基板・小型家電・扇風機・スマホ等)
         if (q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯電話") || q.contains("携帯") ||
             q.contains("タブレット") || q.contains("スマートウォッチ") || q.contains("小型家電") ||
             q.contains("充電器") || q.contains("アダプター") || q.contains("ガラケー") || q.contains("電子辞書") ||
             q.contains("イヤホン") || q.contains("ワイヤレスイヤホン") ||
             q.contains("扇風機") || q.contains("サーキュレーター") || q.contains("ハンディファン") ||
-            q.contains("ドライヤー") || q.contains("アイロン")
+            q.contains("ドライヤー") || q.contains("アイロン") ||
+            q.contains("基板") || q.contains("制御基板") || q.contains("プリント基板") || q.contains("回路") ||
+            q.contains("電子部品") || q.contains("半導体") || q.contains("コンデンサ") || q.contains("マザーボード")
         ) {
+            val isCircuitBoard = q.contains("基板") || q.contains("制御基板") || q.contains("プリント基板") ||
+                    q.contains("回路") || q.contains("電子部品") || q.contains("半導体") || q.contains("コンデンサ") || q.contains("マザーボード")
             val isFan = q.contains("扇風機") || q.contains("サーキュレーター") || q.contains("ハンディファン")
             val smallAppCat = municipality.categories.firstOrNull { it.id == "small_appliance" }
                 ?: municipality.categories.firstOrNull { it.id == "non_burnable" }
@@ -137,6 +141,7 @@ class WasteClassifierEngine(
 
             val isPhone = q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯")
             val displayName = when {
+                isCircuitBoard -> if (q.contains("制御基板")) "電子基板（制御基板）" else "電子基板・電子部品"
                 isPhone -> "スマートフォン"
                 q.contains("タブレット") -> "タブレット端末"
                 q.contains("ハンディファン") -> "携帯用ハンディファン（充電式扇風機）"
@@ -145,7 +150,17 @@ class WasteClassifierEngine(
                 else -> query.trim()
             }
 
-            val advice = if (isFan) {
+            val advice = if (isCircuitBoard) {
+                if (municipality.id == "aisai") {
+                    "電子基板・制御基板などの電子部品は【プラスチックごみには絶対に出せません】。\n" +
+                    "【出し方1（推奨・無料）】愛西市役所本庁舎、各支所（八開・立田・佐織）、中央公民館等の『使用済小型家電回収ボックス』（投入口 縦15cm×横30cm）へ投入してください（有用金属資源リサイクル）。袋は不要です。\n" +
+                    "【出し方2】回収ボックスに入らない場合は、愛西市指定の『不燃物専用袋（黄色）』に入れて【不燃ごみ】（毎月第2水曜日）へお出しください。\n" +
+                    "⚠️プラスチック資源に混入すると、リサイクル処理工場で再生機器の重大な故障や異物混入事故を引き起こします。"
+                } else {
+                    "${municipality.name}では電子基板・電子パーツは【${smallAppCat.name}】です。プラスチック資源には出せません。\n" +
+                    "※小型家電回収ボックスをご利用いただくか、指定の不燃ごみ袋でお出しください。"
+                }
+            } else if (isFan) {
                 if (municipality.id == "aisai") {
                     "小型扇風機・サーキュレーター等の電化製品は【プラスチックごみには絶対に出せません】。\n" +
                     "【出し方1】市役所・支所設置の『小型家電回収ボックス』（投入口 縦15cm×横30cm以内）に入る卓上サイズは無料リサイクル回収へ。\n" +
@@ -168,10 +183,10 @@ class WasteClassifierEngine(
                     categoryId = smallAppCat.id,
                     colorHex = smallAppCat.colorHex,
                     municipalityName = municipality.name,
-                    nextDateText = if (isFan && municipality.id == "aisai") "毎月第2水曜日（不燃）/ ボックスは随時" else "市役所・量販店等の回収BOX（開館中随時）",
-                    daysRemainingText = if (isFan && municipality.id == "aisai") "拠点BOXまたは不燃収集" else "常時持込可",
+                    nextDateText = if ((isFan || isCircuitBoard) && municipality.id == "aisai") "毎月第2水曜日（不燃）/ 拠点BOXは随時" else "市役所・量販店等の回収BOX（開館中随時）",
+                    daysRemainingText = if ((isFan || isCircuitBoard) && municipality.id == "aisai") "拠点BOXまたは不燃収集" else "常時持込可",
                     disposalAdvice = advice,
-                    sizeMaterialNotes = "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
+                    sizeMaterialNotes = if (isCircuitBoard) "都市鉱山（金・銀・銅・レアメタル）リサイクル対象品です。プラスチック資源には出せません。" else "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
                     requiresReservation = false
                 )
             )
@@ -532,8 +547,14 @@ class WasteClassifierEngine(
             )
         }
 
-        // Small Appliances (扇風機・サーキュレーター・ドライヤー・炊飯器・小型家電)
-        val isSmallAppliance = itemName.contains("扇風機") || itemName.contains("サーキュレーター") ||
+        // Small Appliances & Electronic Parts (基板・電子部品・扇風機・サーキュレーター・ドライヤー・炊飯器・小型家電)
+        val isCircuitBoard = itemName.contains("基板") || itemName.contains("制御基板") ||
+                itemName.contains("プリント基板") || itemName.contains("基盤") || itemName.contains("回路") ||
+                itemName.contains("電子部品") || itemName.contains("半導体") || itemName.contains("コンデンサ") ||
+                itemName.contains("マザーボード") || itemName.contains("IC") || itemName.contains("ヒートシンク")
+
+        val isSmallAppliance = isCircuitBoard ||
+                itemName.contains("扇風機") || itemName.contains("サーキュレーター") ||
                 itemName.contains("ファン") || itemName.contains("ドライヤー") || itemName.contains("アイロン") ||
                 itemName.contains("炊飯器") || itemName.contains("ケトル") || (itemName.contains("ポット") && !itemName.contains("植木")) ||
                 itemName.contains("電子レンジ") || itemName.contains("トースター") || itemName.contains("掃除機") ||
@@ -550,7 +571,17 @@ class WasteClassifierEngine(
             val sched = municipality.schedules.firstOrNull { it.categoryId == appCat.id }
             val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
 
-            val advice = if (municipality.id == "aisai") {
+            val advice = if (isCircuitBoard) {
+                if (municipality.id == "aisai") {
+                    "電子基板・制御基板などの電子部品は【プラスチックごみには絶対に出せません】。\n" +
+                    "【出し方1（推奨）】市役所本庁舎や各支所（八開・立田・佐織）、中央公民館等の『使用済小型家電回収ボックス』（投入口 縦15cm×横30cm）へ投入してください（無料・レアメタルリサイクル）。\n" +
+                    "【出し方2】ボックスに入らないものは、愛西市指定の『不燃物専用袋（黄色）』に入れて【不燃ごみ】（毎月第2水曜日）へお出しください。\n" +
+                    "⚠️プラスチック資源に混入すると、リサイクル処理工場で破砕機や再生機器を破損させる重大な損害・事故の原因となります。"
+                } else {
+                    "${municipality.name}では電子基板・精密部品は【${appCat.name}】です。プラスチックごみには出せません。\n" +
+                    "※市役所等の小型家電回収ボックスをご利用いただくか、指定の不燃ごみ袋でお出しください。"
+                }
+            } else if (municipality.id == "aisai") {
                 "小型扇風機・サーキュレーター等の電化製品はプラスチックごみには出せません！\n" +
                 "【出し方1】市役所・各支所等に設置の『小型家電回収ボックス』（投入口 縦15cm×横30cm以内）に入るものは無料回収。\n" +
                 "【出し方2】ボックスに入らないものは愛西市指定の『不燃物専用袋』に入れて【不燃ごみ】（毎月第2水曜日）へ。\n" +
@@ -570,7 +601,7 @@ class WasteClassifierEngine(
                 nextDateText = next.dateText + next.dayOfWeekText,
                 daysRemainingText = next.daysRemainingText,
                 disposalAdvice = advice,
-                sizeMaterialNotes = "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
+                sizeMaterialNotes = if (isCircuitBoard) "都市鉱山（有用金属）リサイクル対象の電子部品です。プラスチック資源には出せません。" else "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
                 requiresReservation = false
             )
         }
@@ -649,7 +680,35 @@ class WasteClassifierEngine(
             )
         }
 
-        // Under threshold: Municipal differences!
+        // Verify if item is actually plastic before routing to plastic recycling rules
+        val isConfirmedPlastic = itemName.contains("プラスチック") || itemName.contains("プラ") ||
+                itemName.contains("タッパー") || itemName.contains("ケース") || itemName.contains("衣装") ||
+                itemName.contains("バケツ") || itemName.contains("ポリ") || itemName.contains("レジ袋") ||
+                itemName.contains("トレイ") || itemName.contains("パック") || itemName.contains("ボトル") ||
+                itemName.contains("ラップ") || itemName.contains("シート") || itemName.contains("ストロー") ||
+                itemName.contains("ハンガー") || itemName.contains("スポンジ") ||
+                (answers.containsKey("material") && (material == "hard_plastic" || material == "soft_plastic"))
+
+        if (!isConfirmedPlastic) {
+            val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+            return SortingResult(
+                itemName = "$itemName（指定袋サイズ）",
+                categoryName = nonBurnableCat.name,
+                categoryId = nonBurnableCat.id,
+                colorHex = nonBurnableCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = "金属やプラスチック・複合素材等の製品は指定の不燃ごみ袋に入れて、収集日の朝にお出しください。",
+                sizeMaterialNotes = "${municipality.name}の収集基準に準拠しています。プラスチック資源ではありません。",
+                requiresReservation = false
+            )
+        }
+
+        // Under threshold: Municipal differences for confirmed plastic items!
         if (municipality.id == "aisai") {
             // Aisai City: Plastic goes to designated plastic bag on Tuesdays
             val cat = municipality.categories.firstOrNull { it.id == "plastic" }
@@ -822,9 +881,16 @@ class WasteClassifierEngine(
                 val reason = root.optString("reason", "")
 
                 // High-priority safety check: Smartphones, tablets, batteries & small appliances must NEVER fall back to burnable!
-                val isSmallAppliance = itemName.contains("スマホ") || itemName.contains("スマートフォン") ||
+                val isCircuitBoard = itemName.contains("基板") || itemName.contains("制御基板") ||
+                        itemName.contains("プリント基板") || itemName.contains("回路") || itemName.contains("電子部品") ||
+                        itemName.contains("半導体") || itemName.contains("コンデンサ") || itemName.contains("マザーボード")
+
+                val isSmallAppliance = isCircuitBoard ||
+                        itemName.contains("スマホ") || itemName.contains("スマートフォン") ||
                         itemName.contains("携帯") || itemName.contains("タブレット") || itemName.contains("小型家電") ||
                         itemName.contains("充電器") || itemName.contains("スマートウォッチ") || itemName.contains("電子辞書") ||
+                        itemName.contains("扇風機") || itemName.contains("サーキュレーター") || itemName.contains("ファン") ||
+                        itemName.contains("ドライヤー") || itemName.contains("アイロン") ||
                         categoryHint.contains("小型家電") || categoryHint.contains("拠点") || advice.contains("回収ボックス")
 
                 val isHazardousBattery = itemName.contains("電池") || itemName.contains("バッテリー") ||

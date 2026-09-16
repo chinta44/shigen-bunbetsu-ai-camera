@@ -131,6 +131,9 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     private val _isBarcodeScanning = MutableStateFlow(false)
     val isBarcodeScanning: StateFlow<Boolean> = _isBarcodeScanning.asStateFlow()
 
+    private val _barcodeScanError = MutableStateFlow<String?>(null)
+    val barcodeScanError: StateFlow<String?> = _barcodeScanError.asStateFlow()
+
     private val _activeBarcodeResult = MutableStateFlow<BarcodeAnalysisResult?>(null)
     val activeBarcodeResult: StateFlow<BarcodeAnalysisResult?> = _activeBarcodeResult.asStateFlow()
 
@@ -441,12 +444,18 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     // Barcode Scanning Controls
     // ==========================================
     fun openBarcodeScanner() {
+        _barcodeScanError.value = null
         _isBarcodeScannerOpen.value = true
     }
 
     fun closeBarcodeScanner() {
+        _barcodeScanError.value = null
         _isBarcodeScannerOpen.value = false
         _isBarcodeScanning.value = false
+    }
+
+    fun clearBarcodeScanError() {
+        _barcodeScanError.value = null
     }
 
     fun dismissBarcodeResult() {
@@ -455,31 +464,36 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
 
     fun scanBarcodeBitmap(bitmap: Bitmap) {
         _isBarcodeScanning.value = true
+        _barcodeScanError.value = null
         viewModelScope.launch {
             val barcode = BarcodeScannerHelper.decodeBarcodeFromBitmap(bitmap)
             _isBarcodeScanning.value = false
             if (barcode != null) {
                 scanBarcodeValue(barcode)
             } else {
-                _statusNotification.value = "バーコードを認識できませんでした。枠内に合わせてピントを確認してください。"
+                _barcodeScanError.value = "バーコードを認識できませんでした。\n白黒の縞模様にピントを合わせ、正面から水平に大きく撮影してください。"
+                _statusNotification.value = "バーコードを認識できませんでした。枠内に合わせてピントをご確認ください。"
             }
         }
     }
 
     fun scanBarcodeValue(barcode: String) {
-        _isBarcodeScannerOpen.value = false
+        _barcodeScanError.value = null
         _isBarcodeScanning.value = false
         val product = BarcodeDatabase.findByBarcode(barcode)
         val municipality = currentMunicipality.value
 
         if (product != null) {
+            _isBarcodeScannerOpen.value = false
             val resolved = BarcodeScannerHelper.resolveProductForMunicipality(product, municipality)
             _activeBarcodeResult.value = resolved
             viewModelScope.launch {
                 repository.saveToHistory(resolved.primarySortingResult)
             }
+            feedbackManager.playResultFeedback(isHapticsEnabled.value, isSoundEnabled.value)
             _statusNotification.value = "バーコードから「${product.productName}」を特定しました"
         } else {
+            _barcodeScanError.value = "バーコード（$barcode）の商品情報が見つかりませんでした。"
             _statusNotification.value = "バーコード($barcode)の商品情報が見つかりませんでした。"
         }
     }

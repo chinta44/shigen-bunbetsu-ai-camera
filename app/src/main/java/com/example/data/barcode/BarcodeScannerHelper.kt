@@ -11,6 +11,7 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.GlobalHistogramBinarizer
 import com.google.zxing.common.HybridBinarizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,8 +19,9 @@ import kotlinx.coroutines.withContext
 object BarcodeScannerHelper {
 
     /**
-     * Attempts to decode a barcode (EAN-13, EAN-8, UPC, QR code, Code 128, etc.) from a Bitmap.
-     * Tries 0°, 90°, 180°, 270° orientations if needed.
+     * Highly resilient barcode decoder supporting EAN-13, EAN-8, UPC, Code 128, etc.
+     * Evaluates multiple binarization algorithms (Hybrid & GlobalHistogram),
+     * multiple crop regions (full, center box, horizontal band), inverted luminances, and rotations.
      */
     suspend fun decodeBarcodeFromBitmap(bitmap: Bitmap): String? = withContext(Dispatchers.Default) {
         val reader = MultiFormatReader().apply {
@@ -33,41 +35,111 @@ object BarcodeScannerHelper {
                         com.google.zxing.BarcodeFormat.UPC_E,
                         com.google.zxing.BarcodeFormat.CODE_128,
                         com.google.zxing.BarcodeFormat.CODE_39,
+                        com.google.zxing.BarcodeFormat.ITF,
                         com.google.zxing.BarcodeFormat.QR_CODE
                     )
                 )
             )
         }
 
-        // Try natural orientation
-        var result = decodeSingleBitmap(reader, bitmap)
-        if (result != null) return@withContext result
+        // 1. Prepare normalized bitmap (prevent memory exhaustion on 48MP photos, while maintaining sharpness)
+        val normalized = prepareNormalizedBitmap(bitmap)
 
-        // Try 90 degree rotation
-        val rotated90 = rotateBitmap(bitmap, 90f)
-        result = decodeSingleBitmap(reader, rotated90)
-        if (result != null) return@withContext result
+        // 2. Generate candidate crop regions (Center crop and horizontal strip often isolate the barcode from clutter)
+        val candidates = mutableListOf<Bitmap>()
+        candidates.add(normalized)
 
-        // Try 270 degree rotation
-        val rotated270 = rotateBitmap(bitmap, 270f)
-        result = decodeSingleBitmap(reader, rotated270)
-        return@withContext result
+        createCenterCrop(normalized, 0.75f, 0.60f)?.let { candidates.add(it) }
+        createCenterCrop(normalized, 0.90f, 0.35f)?.let { candidates.add(it) } // Barcode-like wide strip
+
+        for (candidate in candidates) {
+            // Natural orientation
+            var code = decodeBitmapVariations(reader, candidate)
+            if (code != null) return@withContext code
+
+            // 90 degrees rotation
+            val rot90 = rotateBitmap(candidate, 90f)
+            code = decodeBitmapVariations(reader, rot90)
+            if (code != null) return@withContext code
+
+            // 270 degrees rotation
+            val rot270 = rotateBitmap(candidate, 270f)
+            code = decodeBitmapVariations(reader, rot270)
+            if (code != null) return@withContext code
+
+            // 180 degrees (upside down)
+            val rot180 = rotateBitmap(candidate, 180f)
+            code = decodeBitmapVariations(reader, rot180)
+            if (code != null) return@withContext code
+        }
+
+        return@withContext null
     }
 
-    private fun decodeSingleBitmap(reader: MultiFormatReader, bmp: Bitmap): String? {
+    private fun decodeBitmapVariations(reader: MultiFormatReader, bmp: Bitmap): String? {
         return try {
             val width = bmp.width
             val height = bmp.height
             val pixels = IntArray(width * height)
             bmp.getPixels(pixels, 0, width, 0, 0, width, height)
             val source = RGBLuminanceSource(width, height, pixels)
-            val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
-            val rawResult = reader.decodeWithState(binaryBitmap)
-            rawResult.text
+
+            // Attempt 1: HybridBinarizer
+            try {
+                val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
+                val rawResult = reader.decodeWithState(binaryBitmap)
+                if (!rawResult.text.isNullOrBlank()) return rawResult.text
+            } catch (_: Exception) {} finally { reader.reset() }
+
+            // Attempt 2: GlobalHistogramBinarizer (superior on shadow-heavy/uneven 1D barcodes)
+            try {
+                val binaryBitmap = BinaryBitmap(GlobalHistogramBinarizer(source))
+                val rawResult = reader.decodeWithState(binaryBitmap)
+                if (!rawResult.text.isNullOrBlank()) return rawResult.text
+            } catch (_: Exception) {} finally { reader.reset() }
+
+            // Attempt 3: Inverted luminance (white-on-black barcodes)
+            try {
+                val inverted = source.invert()
+                val binaryBitmap = BinaryBitmap(HybridBinarizer(inverted))
+                val rawResult = reader.decodeWithState(binaryBitmap)
+                if (!rawResult.text.isNullOrBlank()) return rawResult.text
+            } catch (_: Exception) {} finally { reader.reset() }
+
+            null
         } catch (e: Exception) {
             null
         } finally {
             reader.reset()
+        }
+    }
+
+    private fun prepareNormalizedBitmap(bmp: Bitmap): Bitmap {
+        val maxDim = maxOf(bmp.width, bmp.height)
+        if (maxDim > 1600) {
+            val scale = 1600f / maxDim
+            val w = (bmp.width * scale).toInt()
+            val h = (bmp.height * scale).toInt()
+            return Bitmap.createScaledBitmap(bmp, w, h, true)
+        }
+        if (maxDim < 400 && maxDim > 0) {
+            val scale = 2f
+            val w = (bmp.width * scale).toInt()
+            val h = (bmp.height * scale).toInt()
+            return Bitmap.createScaledBitmap(bmp, w, h, true)
+        }
+        return bmp
+    }
+
+    private fun createCenterCrop(source: Bitmap, widthRatio: Float, heightRatio: Float): Bitmap? {
+        return try {
+            val cropW = (source.width * widthRatio).toInt().coerceIn(10, source.width)
+            val cropH = (source.height * heightRatio).toInt().coerceIn(10, source.height)
+            val startX = ((source.width - cropW) / 2).coerceAtLeast(0)
+            val startY = ((source.height - cropH) / 2).coerceAtLeast(0)
+            Bitmap.createBitmap(source, startX, startY, cropW, cropH)
+        } catch (e: Exception) {
+            null
         }
     }
 

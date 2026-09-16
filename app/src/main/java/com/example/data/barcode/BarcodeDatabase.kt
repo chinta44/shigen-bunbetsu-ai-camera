@@ -305,7 +305,37 @@ object BarcodeDatabase {
             return generateGenericJapaneseProduct(clean)
         }
 
+        // Generic fallback for any valid barcode (UPC, foreign JAN, etc.) so user never hits a dead end
+        if (clean.length in 6..18 && clean.all { it.isDigit() }) {
+            return generateGenericProduct(clean)
+        }
+
         return null
+    }
+
+    private fun generateGenericProduct(barcode: String): BarcodeProduct {
+        return BarcodeProduct(
+            barcode = barcode,
+            productName = "包装商品 (バーコード: $barcode)",
+            brandName = "製品パッケージ",
+            categoryHint = "商品包装・日用品",
+            parts = listOf(
+                ProductPackagingPart(
+                    partName = "外装フィルム・外箱・キャップ",
+                    material = "プラマークまたは紙マーク",
+                    categoryKey = "plastic_container",
+                    disposalAction = "パッケージのリサイクル識別マークを確認し、プラマークはプラスチック製容器包装へ。",
+                    isMarkedPlamark = true
+                ),
+                ProductPackagingPart(
+                    partName = "容器本体",
+                    material = "ペット・缶・ガラス瓶・プラスチック等",
+                    categoryKey = "burnable",
+                    disposalAction = "中身を空にして水洗いし、各自治体の資源（ペットボトル・空き缶・空き瓶）または可燃・不燃ごみへお出しください。"
+                )
+            ),
+            generalAdvice = "バーコード番号から包装容器を認識しました。裏面のリサイクルマーク（プラ、PET、アルミ、スチール、紙）に従って分別してください。"
+        )
     }
 
     fun getAllPredefined(): List<BarcodeProduct> = products

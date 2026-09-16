@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.2"
-    const val CURRENT_VERSION_CODE = 6
+    const val CURRENT_VERSION_NAME = "1.3.3"
+    const val CURRENT_VERSION_CODE = 7
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.3",
+            versionCode = 7,
+            releaseDate = "2026-09-16",
+            title = "電子基板・制御基板・精密パーツの分別強化＆未知品目のプラスチック誤爆防止",
+            changes = listOf(
+                "電子基板・制御基板・プリント基板・回路部品を有用金属（小型家電回収BOX / 不燃ごみ）へ正しく分別する専用ロジックを追加",
+                "サイズ確認などの質問回答後、未定義の品目がプラスチック資源へ盲目的に落ちてしまう旧アーキテクチャのデフォルトフォールバックを完全撤廃",
+                "確実なプラスチック製品（タッパー、プラマーク容器等）と確認できない品目は不燃ごみ等の安全側にルーティングするセーフガードを配備",
+                "愛西市役所・支所の小型家電回収ボックス（縦15cm×横30cm）への無料拠点回収・都市鉱山リサイクルガイダンスを強化"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.2",
             versionCode = 6,

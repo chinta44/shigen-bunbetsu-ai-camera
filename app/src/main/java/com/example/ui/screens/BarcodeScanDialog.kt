@@ -4,7 +4,10 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -13,6 +16,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -46,6 +50,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -78,6 +83,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.barcode.BarcodeDatabase
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -85,6 +91,8 @@ fun BarcodeScanDialog(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     isScanning: Boolean,
+    errorMessage: String? = null,
+    onClearError: () -> Unit = {},
     onBarcodeScanned: (String) -> Unit,
     onBarcodeBitmapCaptured: (Bitmap) -> Unit
 ) {
@@ -93,23 +101,93 @@ fun BarcodeScanDialog(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
     var manualCode by remember { mutableStateOf("") }
+    var localError by remember { mutableStateOf<String?>(null) }
 
-    // Camera capture for barcode
-    val cameraLauncher = rememberLauncherForActivityResult(
+    fun fixOrientationIfNeeded(path: String, bitmap: Bitmap): Bitmap {
+        return try {
+            val exif = ExifInterface(path)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+            val degrees = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+            if (degrees != 0f) {
+                val matrix = Matrix().apply { postRotate(degrees) }
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            } else {
+                bitmap
+            }
+        } catch (_: Exception) {
+            bitmap
+        }
+    }
+
+    fun getTempCaptureFile(): File {
+        val file = File(context.cacheDir, "barcode_camera_capture.jpg")
+        if (file.exists()) file.delete()
+        file.createNewFile()
+        return file
+    }
+
+    // High resolution Camera capture (FileProvider)
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            try {
+                val file = File(context.cacheDir, "barcode_camera_capture.jpg")
+                if (file.exists() && file.length() > 0) {
+                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    if (bitmap != null) {
+                        localError = null
+                        onClearError()
+                        val oriented = fixOrientationIfNeeded(file.absolutePath, bitmap)
+                        onBarcodeBitmapCaptured(oriented)
+                        return@rememberLauncherForActivityResult
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        localError = "撮影が完了しなかったか、画像を取得できませんでした。"
+    }
+
+    // Fallback thumbnail capture
+    val previewLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bmp ->
         if (bmp != null) {
+            localError = null
+            onClearError()
             onBarcodeBitmapCaptured(bmp)
+        } else {
+            localError = "撮影が完了しなかったか、画像を取得できませんでした。"
         }
     }
 
     fun tryLaunchCamera() {
+        localError = null
+        onClearError()
         try {
-            cameraLauncher.launch(null)
+            val file = getTempCaptureFile()
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            takePictureLauncher.launch(uri)
         } catch (e: ActivityNotFoundException) {
-            Toast.makeText(context, "カメラが見つかりません。下の画像選択またはテスト商品をお使いください。", Toast.LENGTH_SHORT).show()
+            localError = "カメラアプリが見つかりません。下の「画像選択」または「JAN手動入力」をお使いください。"
         } catch (e: Exception) {
-            Toast.makeText(context, "カメラを起動できませんでした", Toast.LENGTH_SHORT).show()
+            try {
+                previewLauncher.launch(null)
+            } catch (_: Exception) {
+                localError = "カメラを起動できませんでした。下の画像選択または手動入力をお試しください。"
+            }
         }
     }
 
@@ -119,6 +197,7 @@ fun BarcodeScanDialog(
         if (isGranted) {
             tryLaunchCamera()
         } else {
+            localError = "カメラのアクセス権限が許可されませんでした。設定をご確認ください。"
             Toast.makeText(context, "カメラ権限が許可されませんでした", Toast.LENGTH_SHORT).show()
         }
     }
@@ -129,6 +208,8 @@ fun BarcodeScanDialog(
     ) { uri: Uri? ->
         if (uri != null) {
             try {
+                localError = null
+                onClearError()
                 val bmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
                 } else {
@@ -137,7 +218,7 @@ fun BarcodeScanDialog(
                 }
                 onBarcodeBitmapCaptured(bmp)
             } catch (e: Exception) {
-                // handle error
+                localError = "画像ファイルを読み込めませんでした。"
             }
         }
     }
@@ -266,6 +347,47 @@ fun BarcodeScanDialog(
                 }
             }
 
+            // Error / Guidance Banner
+            val currentError = localError ?: errorMessage
+            if (!currentError.isNullOrBlank()) {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("barcode_error_alert")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentError,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "💡 読み取りのコツ:\n・バーコードの白黒の縞模様にピントを合わせ、正面から水平に大きく撮影してください。\n・光の反射（テカリ）を避け、影にならない明るい場所でお試しください。\n・下欄の「バーコード番号を手動入力」に数字（8桁または13桁）を入れても即座に分別判定できます。",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Camera / Image Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -298,9 +420,15 @@ fun BarcodeScanDialog(
 
                 OutlinedButton(
                     onClick = {
-                        pickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                        localError = null
+                        onClearError()
+                        try {
+                            pickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        } catch (e: Exception) {
+                            localError = "写真選択を開けませんでした"
+                        }
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -314,7 +442,7 @@ fun BarcodeScanDialog(
                 }
             }
 
-            // Sample Barcode Products (for immediate emulator testing)
+            // Sample Barcode Products (for immediate testing)
             Column {
                 Text(
                     text = "テスト用サンプル商品（タップですぐ判定）",
@@ -336,6 +464,8 @@ fun BarcodeScanDialog(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .clickable {
+                                    localError = null
+                                    onClearError()
                                     onBarcodeScanned(prod.barcode)
                                 }
                                 .testTag("sample_barcode_${prod.barcode}"),
@@ -368,7 +498,11 @@ fun BarcodeScanDialog(
             ) {
                 OutlinedTextField(
                     value = manualCode,
-                    onValueChange = { manualCode = it },
+                    onValueChange = {
+                        manualCode = it.filter { ch -> ch.isDigit() }
+                        localError = null
+                        onClearError()
+                    },
                     label = { Text("バーコード番号（JANコード）を手動入力") },
                     placeholder = { Text("例: 4902102072618") },
                     singleLine = true,
@@ -378,7 +512,7 @@ fun BarcodeScanDialog(
                     ),
                     keyboardActions = KeyboardActions(onSearch = {
                         if (manualCode.isNotBlank()) {
-                            onBarcodeScanned(manualCode)
+                            onBarcodeScanned(manualCode.trim())
                         }
                     }),
                     modifier = Modifier
@@ -390,7 +524,7 @@ fun BarcodeScanDialog(
                 Button(
                     onClick = {
                         if (manualCode.isNotBlank()) {
-                            onBarcodeScanned(manualCode)
+                            onBarcodeScanned(manualCode.trim())
                         }
                     },
                     modifier = Modifier.height(56.dp),

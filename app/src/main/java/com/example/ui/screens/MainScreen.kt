@@ -69,6 +69,7 @@ fun MainScreen(viewModel: GarbageViewModel) {
 
     val isBarcodeScannerOpen by viewModel.isBarcodeScannerOpen.collectAsStateWithLifecycle()
     val isBarcodeScanning by viewModel.isBarcodeScanning.collectAsStateWithLifecycle()
+    val barcodeScanError by viewModel.barcodeScanError.collectAsStateWithLifecycle()
     val activeBarcodeResult by viewModel.activeBarcodeResult.collectAsStateWithLifecycle()
 
     val isHapticsEnabled by viewModel.isHapticsEnabled.collectAsStateWithLifecycle()
@@ -405,6 +406,8 @@ fun MainScreen(viewModel: GarbageViewModel) {
         isOpen = isBarcodeScannerOpen,
         onDismiss = { viewModel.closeBarcodeScanner() },
         isScanning = isBarcodeScanning,
+        errorMessage = barcodeScanError,
+        onClearError = { viewModel.clearBarcodeScanError() },
         onBarcodeScanned = { viewModel.scanBarcodeValue(it) },
         onBarcodeBitmapCaptured = { viewModel.scanBarcodeBitmap(it) }
     )
