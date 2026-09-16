@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.1"
-    const val CURRENT_VERSION_CODE = 5
+    const val CURRENT_VERSION_NAME = "1.3.2"
+    const val CURRENT_VERSION_CODE = 6
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.2",
+            versionCode = 6,
+            releaseDate = "2026-09-16",
+            title = "小型家電・電化製品・扇風機・危険物の分別ルーティング根本改修",
+            changes = listOf(
+                "小型扇風機・サーキュレーター・小型家電が質問フロー後にプラスチック資源へ誤分類される構造的不具合を解消",
+                "小型家電回収ボックス（市役所・支所）および愛西市指定不燃物専用袋（第2水曜）への適正案内を追加",
+                "充電式・ハンディファン等のリチウムイオン電池内蔵機器に対する火災防止・発火注意ガイダンスを強化",
+                "質問回答処理（resolveClarification）に電化製品・危険物・衣類・陶器ガラスの包括的セーフティルーティングを実装"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.1",
             versionCode = 5,

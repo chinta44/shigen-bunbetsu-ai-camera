@@ -122,17 +122,45 @@ class WasteClassifierEngine(
             )
         }
 
-        // 0-C. Smartphones, Small Electronics, Lithium-ion Devices (スマートフォン・小型家電・携帯端末)
+        // 0-C. Smartphones, Small Electronics, Fans, Lithium-ion Devices (スマートフォン・小型扇風機・サーキュレーター・小型家電)
         if (q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯電話") || q.contains("携帯") ||
             q.contains("タブレット") || q.contains("スマートウォッチ") || q.contains("小型家電") ||
             q.contains("充電器") || q.contains("アダプター") || q.contains("ガラケー") || q.contains("電子辞書") ||
-            q.contains("イヤホン") || q.contains("ワイヤレスイヤホン")
+            q.contains("イヤホン") || q.contains("ワイヤレスイヤホン") ||
+            q.contains("扇風機") || q.contains("サーキュレーター") || q.contains("ハンディファン") ||
+            q.contains("ドライヤー") || q.contains("アイロン")
         ) {
+            val isFan = q.contains("扇風機") || q.contains("サーキュレーター") || q.contains("ハンディファン")
             val smallAppCat = municipality.categories.firstOrNull { it.id == "small_appliance" }
+                ?: municipality.categories.firstOrNull { it.id == "non_burnable" }
                 ?: MunicipalityData.CAT_SMALL_APPLIANCE
 
             val isPhone = q.contains("スマホ") || q.contains("スマートフォン") || q.contains("携帯")
-            val displayName = if (isPhone) "スマートフォン" else if (q.contains("タブレット")) "タブレット端末" else query.trim()
+            val displayName = when {
+                isPhone -> "スマートフォン"
+                q.contains("タブレット") -> "タブレット端末"
+                q.contains("ハンディファン") -> "携帯用ハンディファン（充電式扇風機）"
+                q.contains("サーキュレーター") -> "サーキュレーター（小型扇風機）"
+                q.contains("扇風機") -> "小型扇風機（サーキュレーター）"
+                else -> query.trim()
+            }
+
+            val advice = if (isFan) {
+                if (municipality.id == "aisai") {
+                    "小型扇風機・サーキュレーター等の電化製品は【プラスチックごみには絶対に出せません】。\n" +
+                    "【出し方1】市役所・支所設置の『小型家電回収ボックス』（投入口 縦15cm×横30cm以内）に入る卓上サイズは無料リサイクル回収へ。\n" +
+                    "【出し方2】ボックスに入らないが愛西市指定不燃物専用袋に入るものは【不燃ごみ】（毎月第2水曜日）へ。\n" +
+                    "※市指定袋に入らない大型リビング扇風機は【粗大ごみ】となります。\n" +
+                    "⚠️【重要：充電式・ハンディファンの場合】内蔵のリチウムイオン電池は収集車火災の原因となるため、電池を取り外せるものは電池回収協力店へ。取り外せないものは市役所環境課等へご相談ください。"
+                } else {
+                    "${municipality.name}では小型扇風機・サーキュレーターは【${smallAppCat.name}】です。プラスチックごみには出せません。\n" +
+                    "※小型家電回収ボックスをご利用いただくか、指定の不燃ごみ袋でお出しください。\n" +
+                    "⚠️充電式（バッテリー内蔵）の場合は発火事故防止のため必ず電池を取り外して危険ごみ・電池回収へ。"
+                }
+            } else {
+                "【発火注意・集積所排出禁止】\nスマートフォン等の充電式電子機器にはリチウムイオン電池が内蔵されており、可燃ごみ・不燃ごみとして出すと収集車や処理施設での重大な火災原因となります。\n\n必ず端末内のデータを初期化・消去し、市役所・支所・公民館・家電量販店などに設置されている「使用済小型家電回収ボックス」に投入してください（袋不要・無料）。各携帯キャリアショップでも無償回収しています。"
+            }
+
             return AnalysisOutput.Resolved(
                 SortingResult(
                     itemName = displayName,
@@ -140,10 +168,10 @@ class WasteClassifierEngine(
                     categoryId = smallAppCat.id,
                     colorHex = smallAppCat.colorHex,
                     municipalityName = municipality.name,
-                    nextDateText = "市役所・量販店等の回収BOX（開館中随時）",
-                    daysRemainingText = "常時持込可",
-                    disposalAdvice = "【発火注意・集積所排出禁止】\nスマートフォン等の充電式電子機器にはリチウムイオン電池が内蔵されており、可燃ごみ・不燃ごみとして出すと収集車や処理施設での重大な火災原因となります。\n\n必ず端末内のデータを初期化・消去し、市役所・支所・公民館・家電量販店などに設置されている「使用済小型家電回収ボックス」に投入してください（袋不要・無料）。各携帯キャリアショップでも無償回収しています。",
-                    sizeMaterialNotes = "${municipality.name}の小型家電リサイクル制度（拠点回収）に準拠しています。袋の購入は不要です。",
+                    nextDateText = if (isFan && municipality.id == "aisai") "毎月第2水曜日（不燃）/ ボックスは随時" else "市役所・量販店等の回収BOX（開館中随時）",
+                    daysRemainingText = if (isFan && municipality.id == "aisai") "拠点BOXまたは不燃収集" else "常時持込可",
+                    disposalAdvice = advice,
+                    sizeMaterialNotes = "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
                     requiresReservation = false
                 )
             )
@@ -462,21 +490,36 @@ class WasteClassifierEngine(
             )
         }
 
-        // Metal mix handling (e.g. stainless water bottle with plastic lid, metal parts)
-        if (material == "metal_mix") {
+        // Metal / Stainless / Umbrella / Pot / Pan / Water bottle handling
+        val isMetalItem = itemName.contains("ステンレス") || itemName.contains("水筒") ||
+                itemName.contains("魔法瓶") || itemName.contains("まほうびん") || itemName.contains("タンブラー") ||
+                itemName.contains("金属") || itemName.contains("フライパン") || itemName.contains("やかん") ||
+                itemName.contains("鍋") || itemName.contains("アルミ") || itemName.contains("スチール") ||
+                itemName.contains("金物") || itemName.contains("傘") || itemName.contains("包丁") ||
+                material == "metal_mix" || material == "metal_or_mix" || material == "metal"
+
+        val isPurePlasticWaterBottle = (itemName.contains("水筒") || itemName.contains("ボトル")) &&
+                (itemName.contains("プラスチック") || itemName.contains("プラ製")) &&
+                !itemName.contains("ステンレス") && !itemName.contains("金属")
+
+        if (isMetalItem && !isPurePlasticWaterBottle) {
             val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
                 ?: MunicipalityData.CAT_NON_BURNABLE
             val sched = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
             val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
 
             val advice = if (municipality.id == "aisai") {
-                "金属が主材料または金属が混ざった製品は【不燃ごみ（指定不燃物袋）】です（第2水曜日）。\n※プラスチック製のフタやカバーなど簡単に外せる樹脂部分は外して【プラスチック類ごみ（毎週火曜）】へ、外せない場合はそのまま不燃ごみへお出しください。"
+                if (itemName.contains("水筒") || itemName.contains("ボトル") || itemName.contains("魔法瓶") || itemName.contains("タンブラー")) {
+                    "ステンレス製水筒・金属ボトル本体は【不燃ごみ（指定不燃物袋）】です（第2水曜日）。\n※プラスチック製のキャップ・フタやシリコンゴムパッキンは外し、キャップは【プラスチック類ごみ（毎週火曜）】、パッキンは【可燃ごみ（月・木）】へ分別してください。"
+                } else {
+                    "金属が主材料または金属が混ざった製品は【不燃ごみ（指定不燃物袋）】です（第2水曜日）。\n※プラスチック製のフタやカバーなど簡単に外せる樹脂部分は外して【プラスチック類ごみ（毎週火曜）】へ、外せない場合はそのまま不燃ごみへお出しください。"
+                }
             } else {
-                "${municipality.name}では金属混在の複合製品は【${nonBurnableCat.name}】です。\n※簡単に取り外せるプラスチックパーツはプラスチック資源等へ分別してください。"
+                "${municipality.name}では金属製・金属混在の製品本体は【${nonBurnableCat.name}】です。\n※簡単に取り外せるプラスチックパーツやパッキンはプラスチック資源または可燃ごみへ分別してください。"
             }
 
             return SortingResult(
-                itemName = "$itemName（金属混在）",
+                itemName = "$itemName（指定袋サイズ）",
                 categoryName = nonBurnableCat.name,
                 categoryId = nonBurnableCat.id,
                 colorHex = nonBurnableCat.colorHex,
@@ -484,7 +527,124 @@ class WasteClassifierEngine(
                 nextDateText = next.dateText + next.dayOfWeekText,
                 daysRemainingText = next.daysRemainingText,
                 disposalAdvice = advice,
-                sizeMaterialNotes = "金属が含まれるため可燃ごみには出せません。取り外せる樹脂パーツは分別を推奨します。",
+                sizeMaterialNotes = "本体は金属（不燃ごみ）です。取り外せる樹脂パーツは分別してお出しください。",
+                requiresReservation = false
+            )
+        }
+
+        // Small Appliances (扇風機・サーキュレーター・ドライヤー・炊飯器・小型家電)
+        val isSmallAppliance = itemName.contains("扇風機") || itemName.contains("サーキュレーター") ||
+                itemName.contains("ファン") || itemName.contains("ドライヤー") || itemName.contains("アイロン") ||
+                itemName.contains("炊飯器") || itemName.contains("ケトル") || (itemName.contains("ポット") && !itemName.contains("植木")) ||
+                itemName.contains("電子レンジ") || itemName.contains("トースター") || itemName.contains("掃除機") ||
+                itemName.contains("ヒーター") || itemName.contains("ストーブ") || itemName.contains("加湿器") ||
+                itemName.contains("空気清浄機") || itemName.contains("時計") || itemName.contains("ラジオ") ||
+                itemName.contains("プリンター") || itemName.contains("パソコン") || itemName.contains("ゲーム") ||
+                itemName.contains("家電") || itemName.contains("小型家電") || itemName.contains("電気") ||
+                material == "appliance"
+
+        if (isSmallAppliance) {
+            val appCat = municipality.categories.firstOrNull { it.id == "small_appliance" }
+                ?: municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == appCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+            val advice = if (municipality.id == "aisai") {
+                "小型扇風機・サーキュレーター等の電化製品はプラスチックごみには出せません！\n" +
+                "【出し方1】市役所・各支所等に設置の『小型家電回収ボックス』（投入口 縦15cm×横30cm以内）に入るものは無料回収。\n" +
+                "【出し方2】ボックスに入らないものは愛西市指定の『不燃物専用袋』に入れて【不燃ごみ】（毎月第2水曜日）へ。\n" +
+                "⚠️【重要：充電式・ハンディファンの場合】リチウムイオン電池内蔵のものは収集車や処理施設での火災事故防止のため、必ず電池を抜いて回収協力店（JBRC）へ。電池が外せないものは販売店や市役所環境課へご相談ください。"
+            } else {
+                "${municipality.name}では電化製品は【${appCat.name}】です。プラスチックごみには出せません。\n" +
+                "※公共施設等の小型家電回収ボックスをご利用いただくか、指定の不燃ごみ袋でお出しください。\n" +
+                "⚠️バッテリー内蔵製品は発火の危険があるため、必ず電池を取り外して危険ごみ・電池回収へ分別してください。"
+            }
+
+            return SortingResult(
+                itemName = "$itemName（指定袋サイズ）",
+                categoryName = appCat.name,
+                categoryId = appCat.id,
+                colorHex = appCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = advice,
+                sizeMaterialNotes = "モーター・電子基板・配線を含む電化製品です。プラスチック資源には出せません。",
+                requiresReservation = false
+            )
+        }
+
+        // Hazardous / Batteries / Mercury / Gas
+        val isHazardous = itemName.contains("電池") || itemName.contains("バッテリー") ||
+                itemName.contains("リチウム") || itemName.contains("充電池") || itemName.contains("蛍光灯") ||
+                itemName.contains("電球") || itemName.contains("水銀") || itemName.contains("ライター")
+        if (isHazardous) {
+            val hazCat = municipality.categories.firstOrNull { it.id == "hazardous" }
+                ?: municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_HAZARDOUS
+            val sched = municipality.schedules.firstOrNull { it.categoryId == hazCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+            return SortingResult(
+                itemName = itemName,
+                categoryName = hazCat.name,
+                categoryId = hazCat.id,
+                colorHex = hazCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = "発火や有害物質漏洩の恐れがある危険物です。電極にテープを貼り、指定の危険ごみ回収日または公共施設の回収拠点へお持ちください。",
+                sizeMaterialNotes = "安全のため他のごみと混ぜずに分別してください。",
+                requiresReservation = false
+            )
+        }
+
+        // Fabric / Clothes / Shoes / Leather
+        val isFabricOrClothing = itemName.contains("服") || itemName.contains("衣類") ||
+                itemName.contains("靴") || itemName.contains("シューズ") || itemName.contains("スニーカー") ||
+                itemName.contains("バッグ") || itemName.contains("かばん") || itemName.contains("カバン") ||
+                itemName.contains("鞄") || itemName.contains("財布") || itemName.contains("ベルト") ||
+                itemName.contains("革") || itemName.contains("布") || itemName.contains("クッション") ||
+                itemName.contains("布団") || itemName.contains("毛布") || itemName.contains("カーテン") ||
+                itemName.contains("ぬいぐるみ") || itemName.contains("タオル")
+        if (isFabricOrClothing) {
+            val burnableCat = municipality.categories.firstOrNull { it.id == "burnable" }
+                ?: MunicipalityData.CAT_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == burnableCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+            return SortingResult(
+                itemName = "$itemName（指定袋サイズ）",
+                categoryName = burnableCat.name,
+                categoryId = burnableCat.id,
+                colorHex = burnableCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = "指定の可燃ごみ袋に入れて口をしっかりしばり、収集日の朝にお出しください。※金属の金具やチャックは外せる範囲で外してください。",
+                sizeMaterialNotes = "布・皮革製品は指定袋に入れば可燃ごみとして収集されます。",
+                requiresReservation = false
+            )
+        }
+
+        // Ceramics / Glass / Tableware
+        val isCeramicOrGlass = itemName.contains("皿") || itemName.contains("茶碗") ||
+                itemName.contains("コップ") || itemName.contains("陶器") || itemName.contains("せともの") ||
+                itemName.contains("ガラス") || itemName.contains("割れ物") || itemName.contains("花瓶")
+        if (isCeramicOrGlass) {
+            val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" }
+                ?: MunicipalityData.CAT_NON_BURNABLE
+            val sched = municipality.schedules.firstOrNull { it.categoryId == nonBurnableCat.id }
+            val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+            return SortingResult(
+                itemName = "$itemName（指定袋サイズ）",
+                categoryName = nonBurnableCat.name,
+                categoryId = nonBurnableCat.id,
+                colorHex = nonBurnableCat.colorHex,
+                municipalityName = municipality.name,
+                nextDateText = next.dateText + next.dayOfWeekText,
+                daysRemainingText = next.daysRemainingText,
+                disposalAdvice = "割れている場合や割れる危険がある場合は、厚紙や新聞紙に包んで「キケン」または「割れ物」と表記の上、指定不燃ごみ袋に入れてお出しください。",
+                sizeMaterialNotes = "陶器・磁器・ガラス製品は不燃ごみとなります。",
                 requiresReservation = false
             )
         }
