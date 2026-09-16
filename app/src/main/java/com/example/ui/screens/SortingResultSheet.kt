@@ -55,6 +55,7 @@ import com.example.data.model.DesignatedBagProvider
 import com.example.data.model.DropoffCategory
 import com.example.data.model.Municipality
 import com.example.data.model.SortingResult
+import com.example.ui.components.BulkyWasteOfficialCard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -320,33 +321,76 @@ fun SortingResultSheet(
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, categoryColor.copy(alpha = 0.4f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(categoryColor, shape = CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteSweep,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(categoryColor, shape = CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteSweep,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "${result.municipalityName}なら",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = result.categoryName,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = categoryColor
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "${result.municipalityName}なら",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                        // Confidence Score Badge (% display)
+                        Surface(
+                            color = if (result.confidenceScore >= 85) Color(0xFF2E7D32).copy(alpha = 0.15f)
+                            else if (result.confidenceScore >= 70) Color(0xFFF57F17).copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (result.confidenceScore >= 85) Color(0xFF2E7D32)
+                                else if (result.confidenceScore >= 70) Color(0xFFF57F17)
+                                else MaterialTheme.colorScheme.error
                             )
-                            Text(
-                                text = result.categoryName,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = categoryColor
-                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (result.confidenceScore >= 80) Icons.Default.CheckCircle else Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = if (result.confidenceScore >= 85) Color(0xFF2E7D32)
+                                    else if (result.confidenceScore >= 70) Color(0xFFF57F17)
+                                    else MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "信頼度 ${result.confidenceScore}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (result.confidenceScore >= 85) Color(0xFF2E7D32)
+                                    else if (result.confidenceScore >= 70) Color(0xFFF57F17)
+                                    else MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
@@ -409,6 +453,11 @@ fun SortingResultSheet(
                         )
                     }
                 }
+            }
+
+            // Municipality Official Bulky Waste Portal & Interactive Fee Calculator
+            if ((result.categoryId == "oversized" || result.requiresReservation) && municipality != null) {
+                BulkyWasteOfficialCard(municipality = municipality)
             }
 
             // Disposal Advice & Tips

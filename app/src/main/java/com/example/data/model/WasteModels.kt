@@ -107,6 +107,26 @@ data class NextDateInfo(
 )
 
 /**
+ * Official Municipality Oversized Waste Information & Fee Guide
+ */
+data class OversizedFeeItem(
+    val itemName: String,
+    val feeYen: Int,
+    val stickerDescription: String
+)
+
+data class OversizedOfficialInfo(
+    val reservationWebUrl: String,
+    val phoneReservationNumber: String,
+    val phoneReservationDisplay: String,
+    val receptionHours: String,
+    val feeRulesSummary: String,
+    val stickerName: String,
+    val purchasePlaces: String,
+    val feeGuideItems: List<OversizedFeeItem> = emptyList()
+)
+
+/**
  * Municipality with rules and schedule
  */
 data class Municipality(
@@ -117,7 +137,8 @@ data class Municipality(
     val oversizedThresholdCm: Int = 30, // 粗大ごみの基準 (名古屋市: 30cm, 横浜市: 金属50cm/その他30cm)
     val plasticRuleNotes: String,
     val categories: List<WasteCategory>,
-    val schedules: List<CollectionSchedule>
+    val schedules: List<CollectionSchedule>,
+    val oversizedOfficialInfo: OversizedOfficialInfo? = null
 )
 
 /**
@@ -150,5 +171,6 @@ data class SortingResult(
     val disposalAdvice: String,
     val sizeMaterialNotes: String,
     val requiresReservation: Boolean = false,
-    val isConfidenceHigh: Boolean = true
+    val isConfidenceHigh: Boolean = true,
+    val confidenceScore: Int = 92 // 0 to 100 percentage
 )

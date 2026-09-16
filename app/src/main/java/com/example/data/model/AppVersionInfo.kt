@@ -9,10 +9,21 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.2.0"
-    const val CURRENT_VERSION_CODE = 3
+    const val CURRENT_VERSION_NAME = "1.3.0"
+    const val CURRENT_VERSION_CODE = 4
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.0",
+            versionCode = 4,
+            releaseDate = "2026-09-16",
+            title = "機能強化・自治体モデル連携強化＆安定性向上",
+            changes = listOf(
+                "自治体データとモデル連携の修正およびビルド安定性の向上",
+                "判定機能・手動訂正・回収拠点マップの安定稼働とパフォーマンス改善",
+                "バージョン情報管理の刷新"
+            )
+        ),
         VersionRelease(
             versionName = "1.2.0",
             versionCode = 3,

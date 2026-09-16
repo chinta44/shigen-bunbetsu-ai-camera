@@ -2,6 +2,8 @@ package com.example.data.repository
 
 import com.example.data.model.CollectionSchedule
 import com.example.data.model.Municipality
+import com.example.data.model.OversizedFeeItem
+import com.example.data.model.OversizedOfficialInfo
 import com.example.data.model.ScheduleRecurrence
 import com.example.data.model.WasteCategory
 import java.time.DayOfWeek
@@ -89,6 +91,84 @@ object MunicipalityData {
         generalRules = "スマートフォン、携帯電話、タブレット、小型家電、充電器等。個人情報を消去し、市役所・支所・公民館・量販店等の専用回収ボックスへ投入してください。リチウムイオン電池内蔵のため集積所ごみ出しは不可です。"
     )
 
+    val AISAI_OVERSIZED = OversizedOfficialInfo(
+        reservationWebUrl = "https://www.city.aisai.lg.jp/contents_detail.php?co=cat&frmId=442&secId=10",
+        phoneReservationNumber = "0567243435",
+        phoneReservationDisplay = "0567-24-3435（戸別収集受付）",
+        receptionHours = "平日 8:30〜17:15（土日祝・年末年始を除く）",
+        feeRulesSummary = "集積所収集: 第1水曜日（200円券/品）\n戸別収集: 第3水曜日（予約制・500円券/品・1回5点まで）",
+        stickerName = "愛西市 粗大ごみ処理シール（200円券・500円券）",
+        purchasePlaces = "愛西市役所、各支所・出張所、市内の各取扱コンビニエンスストア・スーパー等",
+        feeGuideItems = listOf(
+            OversizedFeeItem("自転車（大人・子供用）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("布団・毛布（3枚まで1束）", 200, "200円券 × 1枚"),
+            OversizedFeeItem("タンス・本棚（高さ1m以上）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("ソファ（1人〜2人掛け）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("テーブル・机・こたつ", 500, "500円券 × 1枚"),
+            OversizedFeeItem("扇風機・暖房器具・電子レンジ", 200, "200円券 × 1枚"),
+            OversizedFeeItem("マットレス（スプリングなし）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("物干し竿・じゅうたん・カーペット", 200, "200円券 × 1枚")
+        )
+    )
+
+    val NAGOYA_OVERSIZED = OversizedOfficialInfo(
+        reservationWebUrl = "https://www.city.nagoya.jp/kurashi/category/5-3-2-2-0-0-0-0-0-0.html",
+        phoneReservationNumber = "0120758530",
+        phoneReservationDisplay = "0120-758-530（携帯からは 052-950-2581）",
+        receptionHours = "月〜金 9:00〜17:00（祝日も受付・年末年始除く）",
+        feeRulesSummary = "月1回の収集日の7日前までに電話またはインターネットで事前予約。品目ごとに250円/500円/1,000円/1,500円の手数料納付券を購入して貼付。",
+        stickerName = "名古屋市 粗大ごみ手数料納付券（250円・500円・1,000円・1,500円）",
+        purchasePlaces = "市内のコンビニエンスストア（セブン・ローソン・ファミマ等）、環境事業所、スーパー取扱店",
+        feeGuideItems = listOf(
+            OversizedFeeItem("自転車・三輪車", 500, "500円券 × 1枚"),
+            OversizedFeeItem("布団・マットレス（スプリングなし）", 250, "250円券 × 1枚"),
+            OversizedFeeItem("スプリング入りマットレス", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("2人掛け以上ソファ", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("タンス・食器棚・本棚", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("机・学習机・ダイニングテーブル", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("ガスコンロ・ガステーブル", 500, "500円券 × 1枚"),
+            OversizedFeeItem("電子レンジ・照明器具・扇風機", 500, "500円券 × 1枚"),
+            OversizedFeeItem("じゅうたん・カーペット（畳6畳まで）", 500, "500円券 × 1枚")
+        )
+    )
+
+    val YOKOHAMA_OVERSIZED = OversizedOfficialInfo(
+        reservationWebUrl = "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/gomi-recycle/gomi/shushu/sodai/",
+        phoneReservationNumber = "0570200530",
+        phoneReservationDisplay = "0570-200-530（一般電話 045-330-3953）",
+        receptionHours = "月〜土 8:30〜17:00（祝日含む・日曜日除く）",
+        feeRulesSummary = "金属製品で50cm以上、その他プラスチック・木製品等は30cm以上が対象。事前にインターネットまたは電話で予約し、指定収集シールを貼付。",
+        stickerName = "横浜市 粗大ごみ処理シール（200円券・500円券）",
+        purchasePlaces = "市内のコンビニエンスストア、郵便局、各区資源循環局事務所",
+        feeGuideItems = listOf(
+            OversizedFeeItem("自転車（大人・子供用）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("布団・毛布", 200, "200円券 × 1枚"),
+            OversizedFeeItem("ソファ（2人掛け以上）", 1000, "500円券 × 2枚"),
+            OversizedFeeItem("ダイニングテーブル・机", 500, "500円券 × 1枚"),
+            OversizedFeeItem("タンス（高さ・幅合計200cm未満）", 500, "500円券 × 1枚"),
+            OversizedFeeItem("ガスレンジ・ガステーブル", 500, "500円券 × 1枚"),
+            OversizedFeeItem("扇風機・掃除機・プリンター", 200, "200円券 × 1枚")
+        )
+    )
+
+    val OSAKA_OVERSIZED = OversizedOfficialInfo(
+        reservationWebUrl = "https://www.city.osaka.lg.jp/kankyo/page/0000009054.html",
+        phoneReservationNumber = "0120790053",
+        phoneReservationDisplay = "0120-79-0053（携帯・一部IP電話 0570-07-0053）",
+        receptionHours = "月〜土 9:00〜17:00（祝日含む・年末年始除く）",
+        feeRulesSummary = "最大の辺または径が30cmを超えるもの、棒状で1m超のものが対象。粗大ごみ収集受付センターへ電話・Webで申込後、手数料券を購入。",
+        stickerName = "大阪市 粗大ごみ処理手数料券（200円・400円・700円・1,000円）",
+        purchasePlaces = "市内のコンビニエンスストア、環境事業センター、郵便局等",
+        feeGuideItems = listOf(
+            OversizedFeeItem("自転車（防犯登録抹消要）", 700, "700円券 × 1枚"),
+            OversizedFeeItem("布団（2枚まで1束）", 400, "400円券 × 1枚"),
+            OversizedFeeItem("2人掛け以上ソファ", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("タンス・食器棚（3辺計2.5m以上）", 1000, "1,000円券 × 1枚"),
+            OversizedFeeItem("テーブル・学習机", 700, "700円券 × 1枚"),
+            OversizedFeeItem("扇風機・電気ストーブ・電子レンジ", 400, "400円券 × 1枚")
+        )
+    )
+
     val NAGOYA = Municipality(
         id = "nagoya",
         name = "名古屋市",
@@ -116,7 +196,8 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前電話・ネット予約制（月1回定期収集地区別）"),
             CollectionSchedule("hazardous", DayOfWeek.THURSDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 木曜日（不燃・拠点回収）"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・環境事業所等の専用回収ボックス（開庁時間中随時）")
-        )
+        ),
+        oversizedOfficialInfo = NAGOYA_OVERSIZED
     )
 
     val YOKOHAMA = Municipality(
@@ -146,7 +227,8 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前申込制（粗大ごみ受付センター）"),
             CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "第1・第3 水曜日（小さな金属類・乾電池）"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・地区センター等の小型家電回収BOX")
-        )
+        ),
+        oversizedOfficialInfo = YOKOHAMA_OVERSIZED
     )
 
     val SHIBUYA = Municipality(
@@ -206,7 +288,8 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "粗大ごみ収集受付センター予約制"),
             CollectionSchedule("hazardous", DayOfWeek.TUESDAY, ScheduleRecurrence.Weekly, "資源ごみと同日回収"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・環境事業センター等回収BOX")
-        )
+        ),
+        oversizedOfficialInfo = OSAKA_OVERSIZED
     )
 
     val SAPPORO = Municipality(
@@ -294,7 +377,8 @@ object MunicipalityData {
             CollectionSchedule("oversized", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(1, 3)), "集積所:第1水曜(200円券) / 戸別回収:第3水曜(予約制・500円券)"),
             CollectionSchedule("hazardous", DayOfWeek.WEDNESDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2)), "第2 水曜日（不燃・危険物・電池類）"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・支所・公民館等の専用回収ボックス（開館中随時）")
-        )
+        ),
+        oversizedOfficialInfo = AISAI_OVERSIZED
     )
 
     val TSUSHIMA = Municipality(
@@ -390,6 +474,20 @@ object MunicipalityData {
                 CollectionSchedule("paper", DayOfWeek.SATURDAY, ScheduleRecurrence.MonthlyWeeks(listOf(2, 4)), "第2・第4 土曜日"),
                 CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（各自治体窓口・クリーンセンター）"),
                 CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・量販店等の回収BOX（開館中随時）")
+            ),
+            oversizedOfficialInfo = OversizedOfficialInfo(
+                reservationWebUrl = "https://www.google.com/search?q=${cleanName}+粗大ごみ+予約",
+                phoneReservationNumber = "",
+                phoneReservationDisplay = "${cleanName}役所・粗大ごみ受付窓口",
+                receptionHours = "平日 8:30〜17:00（各自治体にお問い合わせください）",
+                feeRulesSummary = "各自治体の指定粗大ごみ処理シールまたは納付券をご購入の上、指定の排出場所へお出しください。",
+                stickerName = "${cleanName} 粗大ごみ処理券",
+                purchasePlaces = "市区町村役所窓口、取扱コンビニエンスストア等",
+                feeGuideItems = listOf(
+                    OversizedFeeItem("大型家具・ベッド・ソファ", 1000, "自治体指定納付券"),
+                    OversizedFeeItem("自転車・小型家具・机", 500, "自治体指定納付券"),
+                    OversizedFeeItem("布団・毛布・カーペット", 300, "自治体指定納付券")
+                )
             )
         )
     }

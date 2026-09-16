@@ -591,6 +591,8 @@ class WasteClassifierEngine(
                     advice
                 }
 
+                val score = root.optInt("confidenceScore", 92).coerceIn(50, 99)
+
                 return AnalysisOutput.Resolved(
                     SortingResult(
                         itemName = itemName,
@@ -602,7 +604,9 @@ class WasteClassifierEngine(
                         daysRemainingText = daysRemainingText,
                         disposalAdvice = finalAdvice,
                         sizeMaterialNotes = reason,
-                        requiresReservation = matchedCat.id == "oversized"
+                        requiresReservation = matchedCat.id == "oversized",
+                        isConfidenceHigh = score >= 80,
+                        confidenceScore = score
                     )
                 )
             }

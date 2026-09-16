@@ -73,6 +73,7 @@ class GeminiWasteService {
                 必ず以下のJSONフォーマットのみで回答してください：
                 {
                   "itemName": "判定した品物名（例：プラスチックケース、ペットボトル）",
+                  "confidenceScore": 95,
                   "isAmbiguous": true または false,
                   "categoryHint": "推測される分別区分（例：プラスチック資源、可燃ごみ、粗大ごみ等）",
                   "reason": "分別の理由や判断基準の説明",
