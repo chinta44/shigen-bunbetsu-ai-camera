@@ -248,7 +248,73 @@ class WasteClassifierEngine(
             }
         }
 
-        // 0-E. Umbrellas (傘・ビニール傘・折りたたみ傘)
+        // 0-E. Medicine Containers, Insect Repellent Bottles, Topical Lotion (虫さされ・かゆみ止め・外用薬・薬のボトル)
+        if (q.contains("虫さされ") || q.contains("かゆみ止め") || q.contains("医薬品") ||
+            q.contains("目薬") || q.contains("外用薬") || q.contains("塗り薬") ||
+            (q.contains("薬") && (q.contains("容器") || q.contains("ボトル") || q.contains("瓶") || q.contains("びん")))
+        ) {
+            val isGlass = q.contains("瓶") || q.contains("びん") || q.contains("ガラス")
+            if (isGlass) {
+                val glassCat = municipality.categories.firstOrNull { it.id == "bottle_can" || it.id == "non_burnable" }
+                    ?: MunicipalityData.CAT_NON_BURNABLE
+                val sched = municipality.schedules.firstOrNull { it.categoryId == glassCat.id }
+                val nextInfo = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+                return AnalysisOutput.Resolved(
+                    SortingResult(
+                        itemName = "医薬品のガラス瓶・ドリンク剤容器",
+                        categoryName = glassCat.name,
+                        categoryId = glassCat.id,
+                        colorHex = glassCat.colorHex,
+                        municipalityName = municipality.name,
+                        nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                        daysRemainingText = nextInfo.daysRemainingText,
+                        disposalAdvice = "残った薬品は新聞紙等に吸わせて可燃ごみへ。ボトルは中を水ですすいで空き瓶・資源ごみへ。プラスチックキャップは外してプラ資源へ出してください。",
+                        sizeMaterialNotes = "中身の残液は下水に流さず紙に吸わせてください。",
+                        requiresReservation = false,
+                        partsBreakdown = listOf(
+                            com.example.data.model.WastePartItem("ガラス小瓶", "ガラス", glassCat.name, "水ですすいで空きびん・資源へ"),
+                            com.example.data.model.WastePartItem("プラスチックキャップ", "プラスチック", "プラスチック資源", "外してプラ袋へ"),
+                            com.example.data.model.WastePartItem("残った薬液", "薬品", "可燃ごみ", "紙に吸わせて可燃袋へ")
+                        )
+                    )
+                )
+            } else {
+                // Plastic topical medicine bottle (e.g. anti-itch lotion, eye drops)
+                val plasticCat = municipality.categories.firstOrNull { it.id == "plastic" }
+                    ?: municipality.categories.firstOrNull { it.id == "burnable" }
+                    ?: MunicipalityData.CAT_PLASTIC
+                val sched = municipality.schedules.firstOrNull { it.categoryId == plasticCat.id }
+                val nextInfo = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+                val advice = if (municipality.id == "aisai") {
+                    "中身の残液はティッシュや古布に吸わせて【可燃ごみ】へ。プラスチック製ボトル本体・キャップは中を軽く水ですすいで【プラスチック類ごみ（毎週火曜・黄色指定袋）】へ出してください。スポンジ栓は外せれば可燃ごみへ、外れなければ本体ごとプラごみへ出せます。"
+                } else {
+                    "中身の残液は紙に吸わせて可燃ごみへ。プラスチック製容器本体とキャップは水ですすいで【${plasticCat.name}】へ出してください。スポンジ栓は外せれば可燃ごみへ。"
+                }
+
+                return AnalysisOutput.Resolved(
+                    SortingResult(
+                        itemName = if (q.contains("虫さされ") || q.contains("かゆみ止め")) "虫さされ・かゆみ止め外用薬ボトル" else "プラスチック製医薬品容器・目薬",
+                        categoryName = plasticCat.name,
+                        categoryId = plasticCat.id,
+                        colorHex = plasticCat.colorHex,
+                        municipalityName = municipality.name,
+                        nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                        daysRemainingText = nextInfo.daysRemainingText,
+                        disposalAdvice = advice,
+                        sizeMaterialNotes = "外用薬などのプラスチック容器包装です。残った薬液は下水に流さず紙等に吸わせて処分します。",
+                        requiresReservation = false,
+                        partsBreakdown = listOf(
+                            com.example.data.model.WastePartItem("ボトル本体・キャップ", "プラスチック(PE/PP)", plasticCat.name, "軽く水ですすいでプラスチック指定袋へ"),
+                            com.example.data.model.WastePartItem("残った薬液（中身）", "外用液体薬", "可燃ごみ", "ティッシュや布に吸わせて可燃袋へ（流しに流さない）"),
+                            com.example.data.model.WastePartItem("スポンジ・塗布部ヘッド", "ウレタンスポンジ/プラ", "可燃ごみ（外せる場合）", "外せれば可燃ごみへ。外れなければ本体ごとプラごみへ")
+                        )
+                    )
+                )
+            }
+        }
+
+        // 0-F. Umbrellas (傘・ビニール傘・折りたたみ傘)
         if (q.contains("傘") || q.contains("かさ") || q.contains("アンブレラ")) {
             val nonBurnableCat = municipality.categories.firstOrNull { it.id == "non_burnable" }
                 ?: MunicipalityData.CAT_NON_BURNABLE
@@ -880,46 +946,41 @@ class WasteClassifierEngine(
                 val advice = root.optString("disposalAdvice", "自治体の指定袋に入れて出してください。")
                 val reason = root.optString("reason", "")
 
-                // High-priority safety check: Smartphones, tablets, batteries & small appliances must NEVER fall back to burnable!
-                val isCircuitBoard = itemName.contains("基板") || itemName.contains("制御基板") ||
-                        itemName.contains("プリント基板") || itemName.contains("回路") || itemName.contains("電子部品") ||
-                        itemName.contains("半導体") || itemName.contains("コンデンサ") || itemName.contains("マザーボード")
-
-                val isSmallAppliance = isCircuitBoard ||
-                        itemName.contains("スマホ") || itemName.contains("スマートフォン") ||
-                        itemName.contains("携帯") || itemName.contains("タブレット") || itemName.contains("小型家電") ||
-                        itemName.contains("充電器") || itemName.contains("スマートウォッチ") || itemName.contains("電子辞書") ||
-                        itemName.contains("扇風機") || itemName.contains("サーキュレーター") || itemName.contains("ファン") ||
-                        itemName.contains("ドライヤー") || itemName.contains("アイロン") ||
-                        categoryHint.contains("小型家電") || categoryHint.contains("拠点") || advice.contains("回収ボックス")
-
-                val isHazardousBattery = itemName.contains("電池") || itemName.contains("バッテリー") ||
-                        categoryHint.contains("危険") || categoryHint.contains("電池") || categoryHint.contains("有害")
-
-                // High-priority safeguard: Metal/Stainless water bottles, pots, frypans, umbrellas must NEVER fall back to burnable!
-                val isMetalItem = itemName.contains("ステンレス水筒") || itemName.contains("水筒") ||
-                        itemName.contains("魔法瓶") || itemName.contains("まほうびん") || itemName.contains("タンブラー") ||
-                        (itemName.contains("ステンレス") && !itemName.contains("たわし")) ||
-                        itemName.contains("フライパン") || itemName.contains("やかん") || itemName.contains("鍋") ||
-                        itemName.contains("金物") || itemName.contains("アルミ") || itemName.contains("スチール") ||
-                        itemName.contains("傘") || itemName.contains("包丁") || itemName.contains("ハサミ") ||
-                        categoryHint.contains("不燃") || categoryHint.contains("金属") || categoryHint.contains("金物")
-
-                val isPurePlasticWaterBottle = (itemName.contains("水筒") || itemName.contains("ボトル")) &&
-                        (itemName.contains("プラスチック") || itemName.contains("プラ製")) &&
-                        !itemName.contains("ステンレス") && !itemName.contains("金属")
-
-                val matchedCat = when {
-                    isSmallAppliance -> municipality.categories.firstOrNull { it.id == "small_appliance" }
-                        ?: MunicipalityData.CAT_SMALL_APPLIANCE
-                    isHazardousBattery -> municipality.categories.firstOrNull { it.id == "hazardous" }
-                        ?: MunicipalityData.CAT_HAZARDOUS
-                    isMetalItem && !isPurePlasticWaterBottle -> municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
-                        ?: MunicipalityData.CAT_NON_BURNABLE
-                    else -> municipality.categories.firstOrNull {
-                        categoryHint.contains(it.shortName) || it.name.contains(categoryHint)
-                    } ?: municipality.categories.firstOrNull { it.id == "burnable" } ?: MunicipalityData.CAT_BURNABLE
+                // Parse detected texts from vision AI
+                val detectedTexts = mutableListOf<String>()
+                val detectedArray = root.optJSONArray("detectedTexts")
+                if (detectedArray != null) {
+                    for (i in 0 until detectedArray.length()) {
+                        val txt = detectedArray.optString(i).trim()
+                        if (txt.isNotBlank()) detectedTexts.add(txt)
+                    }
                 }
+
+                // Parse composite parts breakdown
+                val partsBreakdown = mutableListOf<com.example.data.model.WastePartItem>()
+                val partsArray = root.optJSONArray("partsBreakdown")
+                if (partsArray != null) {
+                    for (i in 0 until partsArray.length()) {
+                        val partObj = partsArray.optJSONObject(i) ?: continue
+                        val pName = partObj.optString("partName")
+                        val pMat = partObj.optString("material")
+                        val pCat = partObj.optString("categoryName")
+                        val pMethod = partObj.optString("disposalMethod")
+                        if (pName.isNotBlank() && pMethod.isNotBlank()) {
+                            partsBreakdown.add(
+                                com.example.data.model.WastePartItem(
+                                    partName = pName,
+                                    material = pMat,
+                                    categoryName = pCat,
+                                    disposalMethod = pMethod
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Smart Category Resolution with complete synonym mapping (Never fall back to burnable for plastics or metals!)
+                val matchedCat = matchCategorySmartly(categoryHint, itemName, reason, advice, municipality)
 
                 val sched = municipality.schedules.firstOrNull { it.categoryId == matchedCat.id }
                 val next = sched?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
@@ -952,13 +1013,128 @@ class WasteClassifierEngine(
                         sizeMaterialNotes = reason,
                         requiresReservation = matchedCat.id == "oversized",
                         isConfidenceHigh = score >= 80,
-                        confidenceScore = score
+                        confidenceScore = score,
+                        partsBreakdown = partsBreakdown,
+                        detectedTexts = detectedTexts
                     )
                 )
             }
         } catch (e: Exception) {
             return null
         }
+    }
+
+    private fun matchCategorySmartly(
+        categoryHint: String,
+        itemName: String,
+        reason: String,
+        advice: String,
+        municipality: Municipality
+    ): com.example.data.model.WasteCategory {
+        val fullText = "$categoryHint $itemName $reason $advice".lowercase()
+
+        // 1. 小型家電・バッテリー内蔵機器
+        val isCircuitBoard = fullText.contains("基板") || fullText.contains("制御基板") ||
+                fullText.contains("回路") || fullText.contains("電子部品") || fullText.contains("マザーボード")
+        val isSmallAppliance = isCircuitBoard ||
+                fullText.contains("小型家電") || fullText.contains("回収ボックス") || fullText.contains("回収box") ||
+                itemName.contains("スマホ") || itemName.contains("スマートフォン") ||
+                itemName.contains("携帯") || itemName.contains("タブレット") ||
+                itemName.contains("充電器") || itemName.contains("スマートウォッチ") ||
+                itemName.contains("電子辞書") || itemName.contains("扇風機") ||
+                itemName.contains("ドライヤー") || itemName.contains("アイロン")
+
+        if (isSmallAppliance) {
+            val cat = municipality.categories.firstOrNull { it.id == "small_appliance" }
+            if (cat != null) return cat
+        }
+
+        // 2. 有害・危険物（スプレー缶、カセットボンベ、乾電池等）
+        val isHazardous = itemName.contains("スプレー缶") || itemName.contains("カセットボンベ") ||
+                itemName.contains("エアゾール") || itemName.contains("ガスボンベ") ||
+                itemName.contains("乾電池") || itemName.contains("ボタン電池") ||
+                itemName.contains("蛍光管") || itemName.contains("ライター") ||
+                fullText.contains("危険物") || fullText.contains("有害") || fullText.contains("ガス抜き")
+
+        if (isHazardous) {
+            val cat = municipality.categories.firstOrNull { it.id == "hazardous" || it.id == "non_burnable" }
+            if (cat != null) return cat
+        }
+
+        // 3. 不燃ごみ・金属類（ステンレス水筒、鍋、フライパン、陶器、ガラス、傘、包丁）
+        val isPurePlasticWaterBottle = (itemName.contains("水筒") || itemName.contains("ボトル")) &&
+                (itemName.contains("プラスチック") || itemName.contains("プラ製")) &&
+                !itemName.contains("ステンレス") && !itemName.contains("金属")
+
+        val isMetalOrCeramic = (itemName.contains("ステンレス水筒") || itemName.contains("水筒") ||
+                itemName.contains("魔法瓶") || itemName.contains("まほうびん") || itemName.contains("タンブラー") ||
+                (itemName.contains("ステンレス") && !itemName.contains("たわし")) ||
+                itemName.contains("フライパン") || itemName.contains("やかん") || itemName.contains("鍋") ||
+                itemName.contains("金物") || itemName.contains("アルミ") || itemName.contains("スチール") ||
+                itemName.contains("傘") || itemName.contains("包丁") || itemName.contains("ハサミ") ||
+                categoryHint.contains("不燃") || categoryHint.contains("金属") || categoryHint.contains("金物") ||
+                categoryHint.contains("陶器") || categoryHint.contains("ガラス") || categoryHint.contains("燃えない")) &&
+                !isPurePlasticWaterBottle
+
+        if (isMetalOrCeramic) {
+            val cat = municipality.categories.firstOrNull { it.id == "non_burnable" || it.id == "metal" }
+            if (cat != null) return cat
+        }
+
+        // 4. ペットボトル（飲料用PETボトル）
+        val isPetBottle = (itemName.contains("ペットボトル") || fullText.contains("ペットボトル") || categoryHint.contains("pet")) &&
+                !itemName.contains("キャップ") && !itemName.contains("ラベル")
+        if (isPetBottle) {
+            val cat = municipality.categories.firstOrNull { it.id == "bottle_can" || it.id == "pet" || it.id == "plastic" }
+            if (cat != null) return cat
+        }
+
+        // 5. 空き缶・空き瓶
+        val isCanOrBottle = fullText.contains("空き缶") || fullText.contains("空き瓶") ||
+                fullText.contains("空きビン") || fullText.contains("飲料缶") ||
+                (fullText.contains("びん") && !fullText.contains("魔法瓶"))
+        if (isCanOrBottle) {
+            val cat = municipality.categories.firstOrNull { it.id == "bottle_can" || it.id == "non_burnable" }
+            if (cat != null) return cat
+        }
+
+        // 6. 資源古紙
+        val isPaper = fullText.contains("古紙") || fullText.contains("段ボール") ||
+                fullText.contains("新聞") || fullText.contains("雑誌") || fullText.contains("紙パック")
+        if (isPaper) {
+            val cat = municipality.categories.firstOrNull { it.id == "paper" }
+            if (cat != null) return cat
+        }
+
+        // 7. 粗大ごみ
+        val isOversized = fullText.contains("粗大") || fullText.contains("大型ごみ")
+        if (isOversized) {
+            val cat = municipality.categories.firstOrNull { it.id == "oversized" }
+            if (cat != null) return cat
+        }
+
+        // 8. ★最重要★ プラスチック資源 / プラスチック類ごみ（シノニム完全網羅）
+        val isPlastic = categoryHint.contains("プラ") || categoryHint.contains("プラスチック") ||
+                categoryHint.contains("容器包装") || categoryHint.contains("合成樹脂") ||
+                itemName.contains("プラスチック") || itemName.contains("プラ製") ||
+                itemName.contains("ポリ") || itemName.contains("ビニール") ||
+                itemName.contains("タッパー") || itemName.contains("トレイ") ||
+                reason.contains("プラスチック") || reason.contains("プラマーク") || reason.contains("容器包装")
+
+        if (isPlastic) {
+            val cat = municipality.categories.firstOrNull { it.id == "plastic" }
+            if (cat != null) return cat
+        }
+
+        // 9. 一般のマッチング（categoryHint との文字列比較）
+        val genericMatch = municipality.categories.firstOrNull {
+            categoryHint.contains(it.shortName) || it.name.contains(categoryHint) ||
+                    categoryHint.contains(it.id)
+        }
+        if (genericMatch != null) return genericMatch
+
+        // 10. 可燃ごみ（フォールバック）
+        return municipality.categories.firstOrNull { it.id == "burnable" } ?: MunicipalityData.CAT_BURNABLE
     }
 
     /**

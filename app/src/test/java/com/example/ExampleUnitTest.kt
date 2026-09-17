@@ -10,10 +10,27 @@ import org.junit.Test
 class ExampleUnitTest {
     @Test
     fun testVersionBumping() {
-        assertEquals("1.2.0", AppVersionManager.CURRENT_VERSION_NAME)
-        assertEquals(3, AppVersionManager.CURRENT_VERSION_CODE)
+        assertEquals("1.3.6", AppVersionManager.CURRENT_VERSION_NAME)
+        assertEquals(9, AppVersionManager.CURRENT_VERSION_CODE)
         assertTrue(AppVersionManager.VERSION_HISTORY.isNotEmpty())
-        assertEquals("1.2.0", AppVersionManager.VERSION_HISTORY.first().versionName)
+        assertEquals("1.3.6", AppVersionManager.VERSION_HISTORY.first().versionName)
+    }
+
+    @Test
+    fun testMedicineBottleClassification() = runBlocking {
+        val engine = WasteClassifierEngine()
+        val municipality = MunicipalityData.AISAI
+        val output = engine.analyzeImage(
+            bitmap = null,
+            municipality = municipality,
+            fallbackItemKeyword = "虫さされ・かゆみ止め液ボトル"
+        )
+
+        assertTrue("Expected Resolved output for medicine bottle", output is WasteClassifierEngine.AnalysisOutput.Resolved)
+        val result = (output as WasteClassifierEngine.AnalysisOutput.Resolved).result
+        assertEquals("plastic", result.categoryId)
+        assertTrue("Category should contain プラスチック: ${result.categoryName}", result.categoryName.contains("プラスチック"))
+        assertTrue("Parts breakdown should not be empty", result.partsBreakdown.isNotEmpty())
     }
 
     @Test

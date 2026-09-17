@@ -158,6 +158,16 @@ data class QuestionOption(
 )
 
 /**
+ * Item breakdown part for composite items (e.g. bottle body, cap, sponge/nozzle, remaining liquid)
+ */
+data class WastePartItem(
+    val partName: String,
+    val material: String,
+    val categoryName: String,
+    val disposalMethod: String
+)
+
+/**
  * Final Sorting Verdict
  */
 data class SortingResult(
@@ -172,5 +182,7 @@ data class SortingResult(
     val sizeMaterialNotes: String,
     val requiresReservation: Boolean = false,
     val isConfidenceHigh: Boolean = true,
-    val confidenceScore: Int = 92 // 0 to 100 percentage
+    val confidenceScore: Int = 92, // 0 to 100 percentage
+    val partsBreakdown: List<WastePartItem> = emptyList(),
+    val detectedTexts: List<String> = emptyList()
 )

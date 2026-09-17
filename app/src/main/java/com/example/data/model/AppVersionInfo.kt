@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.5"
-    const val CURRENT_VERSION_CODE = 8
+    const val CURRENT_VERSION_NAME = "1.3.6"
+    const val CURRENT_VERSION_CODE = 9
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.6",
+            versionCode = 9,
+            releaseDate = "2026-09-17",
+            title = "AI鑑定精度の劇的刷新（OCR文字優先認識・パーツ別分解ガイド・表記揺れシノニム完全網羅）",
+            changes = listOf(
+                "【思考の連鎖（Chain-of-Thought）】プロンプトを導入し、ボトルのシルエットだけで飲料と早とちりする問題を根絶",
+                "高解像度（1280px）画像処理とOCR文字優先認識により、虫さされ・かゆみ止め・外用医薬品などの商品パッケージ印字を確実に読み取って品目を特定",
+                "【パーツ・中身別の分解分別ガイド】本体（プラスチック類/不燃）、キャップ、スポンジ塗布部、残った中身（薬品・液体）ごとの詳細な捨て方をカード表示",
+                "【AI判定文字バッジ表示】AIが画像から読み取ったテキストや特徴（「虫さされ」「第2類医薬品」等）を画面に可視化し、推論の透明性と信頼性を向上",
+                "【シノニム完全網羅エンジン】『プラスチック製容器包装』等の表記揺れが自治体ルール（愛西市プラスチック類ごみ等）へ100%吸着し、可燃ごみへ誤転落するバグを根本解決"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.5",
             versionCode = 8,
