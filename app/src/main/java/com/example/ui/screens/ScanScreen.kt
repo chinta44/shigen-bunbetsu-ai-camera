@@ -497,7 +497,7 @@ fun ScanScreen(
                             },
                             label = {
                                 Text(
-                                    text = if (isSoundEnabled) "効果音 ON" else "効果音 OFF",
+                                    text = if (isSoundEnabled) "効果音 (ボヨーン) ON" else "効果音 OFF",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )

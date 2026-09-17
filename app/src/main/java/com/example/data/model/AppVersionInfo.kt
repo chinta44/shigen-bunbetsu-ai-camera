@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.3"
-    const val CURRENT_VERSION_CODE = 7
+    const val CURRENT_VERSION_NAME = "1.3.5"
+    const val CURRENT_VERSION_CODE = 8
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.5",
+            versionCode = 8,
+            releaseDate = "2026-09-17",
+            title = "シャッター音ボヨーン化＆スプレー缶・バーコード安全判定強化",
+            changes = listOf(
+                "カメラ撮影時のシャッター効果音を親しみやすいポップな「ボヨ〜ン」サウンド（コミックスプリング音）に変更",
+                "バネの弾む感覚に連動したマルチパルス・バウンス振動（触覚フィードバック）を実装",
+                "モロッカンビューティ等の高圧ガスエアゾールスプレー缶の識別と愛西市危険物・不燃ごみ適正ルールを完全網羅",
+                "未登録バーコードにおける本体容器の可燃ごみ誤判定を防止し、容器マーク事前確認アラートを配備"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.3",
             versionCode = 7,

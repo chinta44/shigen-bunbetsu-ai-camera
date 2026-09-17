@@ -66,7 +66,10 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val next = !isSoundEnabled.value
             repository.saveSoundEnabled(next)
-            _statusNotification.value = if (next) "効果音フィードバックをONにしました" else "効果音フィードバックをOFFにしました"
+            _statusNotification.value = if (next) "シャッター音をONにしました（ボヨ〜ン♪）" else "シャッター音をOFFにしました"
+            if (next) {
+                feedbackManager.playShutterFeedback(hapticsEnabled = false, soundEnabled = true)
+            }
         }
     }
 

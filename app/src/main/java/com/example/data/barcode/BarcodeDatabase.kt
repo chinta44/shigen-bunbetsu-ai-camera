@@ -292,6 +292,57 @@ object BarcodeDatabase {
                 )
             ),
             generalAdvice = "乾電池は電極をテープで絶縁してから有害危険ごみや家電量販店・区役所の回収ボックスへ出してください。"
+        ),
+        BarcodeProduct(
+            barcode = "4975292602484",
+            productName = "ベニカXファインスプレー 1000ml",
+            brandName = "住友化学園芸",
+            categoryHint = "園芸用殺虫殺菌剤・トリガースプレーボトル",
+            parts = listOf(
+                ProductPackagingPart(
+                    partName = "ボトル本体（PE）",
+                    material = "ポリエチレン（PE プラマーク）",
+                    categoryKey = "plastic_container",
+                    disposalAction = "薬剤を完全に使い切り、内部を水洗いしてプラスチック資源（指定プラ袋）へ。",
+                    isMarkedPlamark = true
+                ),
+                ProductPackagingPart(
+                    partName = "スプレーノズル（トリガー部）",
+                    material = "プラスチック（PP）＋ 内部極小金属スプリング",
+                    categoryKey = "plastic_container",
+                    disposalAction = "ボトルから外し水ですすぎます。愛西市では指定プラ袋へ（金属複合で不燃指定の自治体では不燃ごみ）。",
+                    isMarkedPlamark = true
+                ),
+                ProductPackagingPart(
+                    partName = "薬剤残液（中身がある場合）",
+                    material = "家庭園芸用殺虫殺菌剤（農薬）",
+                    categoryKey = "hazardous",
+                    disposalAction = "中身を入れたまま出すのは禁止です。使い切るか新聞紙等に染み込ませて乾燥させて可燃袋へ。下水や側溝には絶対に流さないでください。"
+                )
+            ),
+            generalAdvice = "殺虫殺菌剤の容器です。必ず中身を使い切り、内部を水ですすいでからプラスチック資源に出してください。残液がある場合は絶対にそのまま捨てないでください。"
+        ),
+        BarcodeProduct(
+            barcode = "4582319171405",
+            productName = "モロッカンビューティ オイルスプレー 145g",
+            brandName = "ボトルワークス",
+            categoryHint = "ヘアスプレー・エアゾールスプレー缶（高圧ガス製品）",
+            parts = listOf(
+                ProductPackagingPart(
+                    partName = "スプレー缶本体（金属缶）",
+                    material = "スチール缶またはアルミ缶（高圧ガスエアゾール）",
+                    categoryKey = "hazardous",
+                    disposalAction = "中身を完全に使い切り、火気のない風通しの良い屋外でガスを抜いてください。愛西市では穴あけ不要で透明袋（危険・有害ごみ・第2水曜）へ出します。"
+                ),
+                ProductPackagingPart(
+                    partName = "スプレーキャップ・ボタン",
+                    material = "プラスチック（PP プラマーク）",
+                    categoryKey = "plastic_container",
+                    disposalAction = "缶から取り外し、愛西市のプラスチック資源（火曜日・指定プラ袋）へ出します。",
+                    isMarkedPlamark = true
+                )
+            ),
+            generalAdvice = "【高圧ガス製品・火気厳禁】スプレー缶は可燃ごみに出すと火災・爆発の危険があります。必ずガス抜きを行ってから、危険・有害ごみまたは不燃ごみ（愛西市：第2水曜日）へお出しください。"
         )
     )
 
@@ -313,6 +364,58 @@ object BarcodeDatabase {
         return null
     }
 
+    fun getAllPredefined(): List<BarcodeProduct> = products
+
+    private fun generateGenericJapaneseProduct(barcode: String): BarcodeProduct {
+        val (manufacturer, isKnown) = when {
+            barcode.startsWith("4975292") -> Pair("住友化学園芸（KINCHO園芸）", true)
+            barcode.startsWith("4901080") -> Pair("アース製薬", true)
+            barcode.startsWith("4902424") -> Pair("フマキラー", true)
+            barcode.startsWith("4987115") -> Pair("KINCHO（大日本除虫菊）", true)
+            barcode.startsWith("4901777") || barcode.startsWith("4901778") -> Pair("サントリー", true)
+            barcode.startsWith("4902102") -> Pair("コカ・コーラ", true)
+            barcode.startsWith("4901004") -> Pair("アサヒ", true)
+            barcode.startsWith("4901411") -> Pair("キリン", true)
+            barcode.startsWith("4901301") -> Pair("花王", true)
+            barcode.startsWith("4903301") -> Pair("ライオン", true)
+            barcode.startsWith("4902777") -> Pair("明治", true)
+            barcode.startsWith("4902105") -> Pair("日清食品", true)
+            barcode.startsWith("4901330") -> Pair("カルビー", true)
+            barcode.startsWith("4901872") -> Pair("資生堂", true)
+            barcode.startsWith("4984824") -> Pair("パナソニック", true)
+            else -> Pair("国内流通メーカー製品", false)
+        }
+
+        val displayProductName = if (isKnown) {
+            "$manufacturer 製品パッケージ"
+        } else {
+            "国内メーカー包装製品"
+        }
+
+        return BarcodeProduct(
+            barcode = barcode,
+            productName = displayProductName,
+            brandName = manufacturer,
+            categoryHint = "日用品・食品包装容器",
+            parts = listOf(
+                ProductPackagingPart(
+                    partName = "外装フィルム・キャップ",
+                    material = "プラスチック製容器包装（プラマーク付）",
+                    categoryKey = "plastic_container",
+                    disposalAction = "プラマークがある包装はプラスチック資源へ。",
+                    isMarkedPlamark = true
+                ),
+                ProductPackagingPart(
+                    partName = "本体容器",
+                    material = "容器本体（缶・ビン・プラ・スプレー缶等）",
+                    categoryKey = "check_mark",
+                    disposalAction = "中身を空にして材質マークを確認。スプレー缶や金属缶は火災防止のため絶対に可燃ごみに入れないでください。"
+                )
+            ),
+            generalAdvice = "商品のパッケージ裏面に表示されているリサイクル識別表示マーク（プラ、紙、アルミ、スチール、PET）をご確認ください。"
+        )
+    }
+
     private fun generateGenericProduct(barcode: String): BarcodeProduct {
         return BarcodeProduct(
             barcode = barcode,
@@ -330,53 +433,11 @@ object BarcodeDatabase {
                 ProductPackagingPart(
                     partName = "容器本体",
                     material = "ペット・缶・ガラス瓶・プラスチック等",
-                    categoryKey = "burnable",
-                    disposalAction = "中身を空にして水洗いし、各自治体の資源（ペットボトル・空き缶・空き瓶）または可燃・不燃ごみへお出しください。"
+                    categoryKey = "check_mark",
+                    disposalAction = "中身を空にして水洗いし、各自治体の資源（ペット・缶・瓶・プラ資源）または不燃ごみへ。スプレー缶は絶対に可燃ごみに入れないでください。"
                 )
             ),
             generalAdvice = "バーコード番号から包装容器を認識しました。裏面のリサイクルマーク（プラ、PET、アルミ、スチール、紙）に従って分別してください。"
-        )
-    }
-
-    fun getAllPredefined(): List<BarcodeProduct> = products
-
-    private fun generateGenericJapaneseProduct(barcode: String): BarcodeProduct {
-        val manufacturer = when {
-            barcode.startsWith("4901777") || barcode.startsWith("4901778") -> "サントリー"
-            barcode.startsWith("4902102") -> "コカ・コーラ"
-            barcode.startsWith("4901004") -> "アサヒ"
-            barcode.startsWith("4901411") -> "キリン"
-            barcode.startsWith("4901301") -> "花王"
-            barcode.startsWith("4903301") -> "ライオン"
-            barcode.startsWith("4902777") -> "明治"
-            barcode.startsWith("4902105") -> "日清食品"
-            barcode.startsWith("4901330") -> "カルビー"
-            barcode.startsWith("4901872") -> "資生堂"
-            barcode.startsWith("4984824") -> "パナソニック"
-            else -> "国内メーカー製品 (JAN: $barcode)"
-        }
-
-        return BarcodeProduct(
-            barcode = barcode,
-            productName = "$manufacturer 包装製品 (バーコード: $barcode)",
-            brandName = manufacturer,
-            categoryHint = "日用品・食品包装容器",
-            parts = listOf(
-                ProductPackagingPart(
-                    partName = "外装フィルム・キャップ",
-                    material = "プラスチック製容器包装（プラマーク付）",
-                    categoryKey = "plastic_container",
-                    disposalAction = "プラマークがある包装はプラスチック資源へ。",
-                    isMarkedPlamark = true
-                ),
-                ProductPackagingPart(
-                    partName = "本体容器",
-                    material = "ボトルまたは容器本体",
-                    categoryKey = "burnable",
-                    disposalAction = "材質（PET、缶、紙、プラ、瓶）を確認し、汚れを落として分別してください。"
-                )
-            ),
-            generalAdvice = "商品のパッケージ裏面に表示されているリサイクル識別表示マーク（プラ、紙、アルミ、スチール、PET）をご確認ください。"
         )
     }
 }

@@ -236,6 +236,18 @@ object BarcodeScannerHelper {
             }
             "hazardous" -> "hazardous"
             "non_burnable" -> "non_burnable"
+            "check_mark" -> {
+                val sched = municipality.schedules.firstOrNull { it.categoryId == "plastic" }
+                    ?: municipality.schedules.firstOrNull()
+                val nextInfo = sched?.getNextCollectionDate()
+                return PartDisposalResolution(
+                    part = part,
+                    targetCategoryName = "容器マーク要確認（プラ・資源・不燃）",
+                    targetColorHex = 0xFF0288D1L, // Material Light Blue
+                    nextSchedule = nextInfo,
+                    instruction = "${part.disposalAction} ※スプレー缶・金属缶は火災防止のため絶対に可燃ごみに入れないでください。"
+                )
+            }
             else -> "burnable"
         }
 
