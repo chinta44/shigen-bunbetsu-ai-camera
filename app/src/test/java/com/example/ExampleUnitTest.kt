@@ -64,4 +64,19 @@ class ExampleUnitTest {
         assertEquals("burnable", correctedResult.categoryId)
         assertTrue(correctedResult.categoryName.contains("可燃"))
     }
+
+    @Test
+    fun testVersionComparison() {
+        val manager = com.example.data.update.AppUpdateManager
+        // Remote is newer
+        assertTrue(manager.isVersionNewer("1.3.7", "1.3.6"))
+        assertTrue(manager.isVersionNewer("1.4.0", "1.3.6"))
+        assertTrue(manager.isVersionNewer("2.0.0", "1.3.6"))
+        assertTrue(manager.isVersionNewer("v1.3.7", "v1.3.6"))
+
+        // Remote is same or older
+        assertFalse(manager.isVersionNewer("1.3.6", "1.3.6"))
+        assertFalse(manager.isVersionNewer("1.3.5", "1.3.6"))
+        assertFalse(manager.isVersionNewer("1.2.0", "1.3.6"))
+    }
 }

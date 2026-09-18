@@ -17,6 +17,11 @@ import com.example.data.repository.MunicipalityData
 import com.example.data.voice.VoiceQueryProcessor
 import com.example.data.voice.VoiceQueryResult
 import com.example.data.voice.VoiceTtsManager
+import com.example.data.update.AppUpdateManager
+import com.example.data.update.AppUpdateInfo
+import com.example.data.update.AppUpdateCheckResult
+import com.example.data.model.AppVersionManager
+import java.io.File
 import com.example.ui.util.FeedbackManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -181,6 +186,36 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
             searchQuery = query
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // App Auto-Update (GitHub Releases)
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
+
+    private val _updateCheckResult = MutableStateFlow<AppUpdateCheckResult?>(null)
+    val updateCheckResult: StateFlow<AppUpdateCheckResult?> = _updateCheckResult.asStateFlow()
+
+    private val _availableUpdateInfo = MutableStateFlow<AppUpdateInfo?>(null)
+    val availableUpdateInfo: StateFlow<AppUpdateInfo?> = _availableUpdateInfo.asStateFlow()
+
+    private val _isUpdateDialogOpen = MutableStateFlow(false)
+    val isUpdateDialogOpen: StateFlow<Boolean> = _isUpdateDialogOpen.asStateFlow()
+
+    private val _isDownloadingApk = MutableStateFlow(false)
+    val isDownloadingApk: StateFlow<Boolean> = _isDownloadingApk.asStateFlow()
+
+    private val _downloadProgress = MutableStateFlow(-1) // 0..100, -1: idle, -2: downloaded
+    val downloadProgress: StateFlow<Int> = _downloadProgress.asStateFlow()
+
+    private val _downloadedApkFile = MutableStateFlow<File?>(null)
+    val downloadedApkFile: StateFlow<File?> = _downloadedApkFile.asStateFlow()
+
+    private val _downloadError = MutableStateFlow<String?>(null)
+    val downloadError: StateFlow<String?> = _downloadError.asStateFlow()
+
+    init {
+        // Automatically check for app updates in the background on startup
+        checkForAppUpdate(isManual = false)
+    }
 
     fun setSelectedTab(tab: Int) {
         _selectedTab.value = tab
@@ -603,6 +638,98 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
     fun navigateToRecycleMap(category: com.example.data.model.DropoffCategory? = null) {
         _recycleCategoryFilter.value = category
         _selectedTab.value = 3
+    }
+
+    // ==========================================
+    // GitHub Releases Auto-Update Actions
+    // ==========================================
+    fun checkForAppUpdate(isManual: Boolean = false) {
+        if (_isCheckingUpdate.value || _isDownloadingApk.value) return
+
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            _downloadError.value = null
+
+            val result = AppUpdateManager.checkForUpdate(AppVersionManager.CURRENT_VERSION_NAME)
+            _updateCheckResult.value = result
+            _isCheckingUpdate.value = false
+
+            when (result) {
+                is AppUpdateCheckResult.UpdateAvailable -> {
+                    _availableUpdateInfo.value = result.info
+                    _downloadProgress.value = -1
+                    _isUpdateDialogOpen.value = true
+                }
+                is AppUpdateCheckResult.UpToDate -> {
+                    if (isManual) {
+                        _statusNotification.value = "お使いのアプリは最新バージョン (v${result.latestVersion}) です"
+                    }
+                }
+                is AppUpdateCheckResult.NoReleaseFound -> {
+                    if (isManual) {
+                        _statusNotification.value = "GitHubにまだReleaseが公開されていません"
+                    }
+                }
+                is AppUpdateCheckResult.Error -> {
+                    if (isManual) {
+                        _statusNotification.value = "更新確認に失敗しました: ${result.message}"
+                    }
+                }
+            }
+        }
+    }
+
+    fun startApkDownload(updateInfo: AppUpdateInfo) {
+        val downloadUrl = updateInfo.apkDownloadUrl ?: return
+        if (_isDownloadingApk.value) return
+
+        viewModelScope.launch {
+            _isDownloadingApk.value = true
+            _downloadProgress.value = 0
+            _downloadError.value = null
+
+            val result = AppUpdateManager.downloadApk(
+                context = getApplication(),
+                downloadUrl = downloadUrl,
+                fileName = updateInfo.apkFileName ?: "update.apk",
+                onProgress = { percent, _, _ ->
+                    _downloadProgress.value = percent
+                }
+            )
+
+            _isDownloadingApk.value = false
+
+            result.fold(
+                onSuccess = { file ->
+                    _downloadedApkFile.value = file
+                    _downloadProgress.value = -2 // downloaded
+                    installDownloadedApk()
+                },
+                onFailure = { error ->
+                    _downloadError.value = "ダウンロードに失敗しました: ${error.localizedMessage}"
+                    _downloadProgress.value = -1
+                }
+            )
+        }
+    }
+
+    fun installDownloadedApk(): Boolean {
+        val file = _downloadedApkFile.value ?: return false
+        return AppUpdateManager.launchInstaller(getApplication(), file)
+    }
+
+    fun openInstallPermissionSettings() {
+        AppUpdateManager.openInstallPermissionSettings(getApplication())
+    }
+
+    fun canInstallPackages(): Boolean {
+        return AppUpdateManager.canInstallPackages(getApplication())
+    }
+
+    fun dismissUpdateDialog() {
+        if (!_isDownloadingApk.value) {
+            _isUpdateDialogOpen.value = false
+        }
     }
 
     override fun onCleared() {

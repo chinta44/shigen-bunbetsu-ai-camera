@@ -84,6 +84,13 @@ fun MainScreen(viewModel: GarbageViewModel) {
     val isApiKeyDialogOpen by viewModel.isApiKeyDialogOpen.collectAsStateWithLifecycle()
     val isVersionDialogOpen by viewModel.isVersionDialogOpen.collectAsStateWithLifecycle()
 
+    val isUpdateDialogOpen by viewModel.isUpdateDialogOpen.collectAsStateWithLifecycle()
+    val availableUpdateInfo by viewModel.availableUpdateInfo.collectAsStateWithLifecycle()
+    val isDownloadingApk by viewModel.isDownloadingApk.collectAsStateWithLifecycle()
+    val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
+    val downloadError by viewModel.downloadError.collectAsStateWithLifecycle()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsStateWithLifecycle()
+
     val allMunicipalities by viewModel.allAvailableMunicipalities.collectAsStateWithLifecycle()
     val customMunicipalities by viewModel.customMunicipalities.collectAsStateWithLifecycle()
     val isGeneratingMunicipality by viewModel.isGeneratingMunicipality.collectAsStateWithLifecycle()
@@ -453,7 +460,24 @@ fun MainScreen(viewModel: GarbageViewModel) {
     // App Version & Changelog Dialog
     if (isVersionDialogOpen) {
         AppVersionDialog(
-            onDismiss = { viewModel.closeVersionDialog() }
+            onDismiss = { viewModel.closeVersionDialog() },
+            onCheckForUpdate = { viewModel.checkForAppUpdate(isManual = true) },
+            isCheckingUpdate = isCheckingUpdate
+        )
+    }
+
+    // GitHub Releases In-App Auto-Updater Dialog
+    if (isUpdateDialogOpen && availableUpdateInfo != null) {
+        AppUpdateDialog(
+            updateInfo = availableUpdateInfo!!,
+            isDownloading = isDownloadingApk,
+            downloadProgress = downloadProgress,
+            downloadError = downloadError,
+            onStartDownload = { viewModel.startApkDownload(availableUpdateInfo!!) },
+            onInstallNow = { viewModel.installDownloadedApk() },
+            onDismiss = { viewModel.dismissUpdateDialog() },
+            canInstallPackages = viewModel.canInstallPackages(),
+            onOpenInstallSettings = { viewModel.openInstallPermissionSettings() }
         )
     }
 }
