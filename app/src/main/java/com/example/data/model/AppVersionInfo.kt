@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.6"
-    const val CURRENT_VERSION_CODE = 9
+    const val CURRENT_VERSION_NAME = "1.3.8"
+    const val CURRENT_VERSION_CODE = 10
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.8",
+            versionCode = 10,
+            releaseDate = "2026-09-18",
+            title = "自治体公式ごみ分別PDF・ハンドブック連携＆GitHub自動アップデート機能搭載",
+            changes = listOf(
+                "【自治体公式分別PDF連携】判定結果およびバーコード識別画面に、自治体発行の公式ごみ分別ガイドブック・家庭ごみ分別早見表PDFへのダイレクト確認リンクを配備",
+                "愛西市（家庭ごみ分別早見表PDF）、名古屋市、横浜市、大阪市、渋谷区、札幌市、福岡市等の公式PDF・ガイド閲覧に完全対応",
+                "AI判定の確証や詳細な注意事項を、自治体の公認ガイドブック原本と照合してワンタップで確認可能に",
+                "【GitHub Releases アプリ内自動更新システム】新バージョン（APK）公開時に起動時通知およびワンタップでのダウンロード・自動更新インストールに対応"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.6",
             versionCode = 9,

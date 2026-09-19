@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Municipality
+import com.example.ui.components.OfficialMunicipalityPdfCard
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -309,6 +310,11 @@ fun CalendarScreen(
                     )
                 }
             }
+        }
+
+        // Official Municipality PDF & Handbook Link Card
+        item {
+            OfficialMunicipalityPdfCard(municipality = municipality)
         }
 
         item {

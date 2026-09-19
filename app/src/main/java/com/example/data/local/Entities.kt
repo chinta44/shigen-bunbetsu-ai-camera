@@ -36,5 +36,8 @@ data class CustomMunicipalityEntity(
     val plasticRuleNotes: String,
     val schedulesJson: String,
     val categoriesJson: String = "",
+    val officialGuidePdfUrl: String? = null,
+    val officialGuidePdfTitle: String? = null,
+    val officialWebUrl: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

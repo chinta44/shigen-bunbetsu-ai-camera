@@ -76,7 +76,10 @@ class MunicipalityAiService {
   "bottleCanDay": "THURSDAY 等の英語曜日",
   "paperSchedule": "第2・第4土曜日 など",
   "paperDay": "SATURDAY 等の英語曜日",
-  "specialNotes": "指定ごみ袋や出し方の特記事項"
+  "specialNotes": "指定ごみ袋や出し方の特記事項",
+  "officialGuidePdfUrl": "自治体公式の家庭ごみ分別早見表/ガイドブックPDFまたは公式案内URL（不明時はnull）",
+  "officialGuidePdfTitle": "公式PDF/早見表の名称（例: 〇〇市 家庭ごみ分別早見表）",
+  "officialWebUrl": "自治体公式のごみポータルWeb URL"
 }
 """.trimIndent()
 
@@ -179,7 +182,10 @@ class MunicipalityAiService {
                     MunicipalityData.CAT_OVERSIZED,
                     MunicipalityData.CAT_HAZARDOUS
                 ),
-                schedules = schedules
+                schedules = schedules,
+                officialGuidePdfUrl = dataObj.optString("officialGuidePdfUrl", "").takeIf { it.isNotBlank() && it != "null" },
+                officialGuidePdfTitle = dataObj.optString("officialGuidePdfTitle", "${name} ごみ分別早見表（公式PDF）").takeIf { it.isNotBlank() && it != "null" },
+                officialWebUrl = dataObj.optString("officialWebUrl", "").takeIf { it.isNotBlank() && it != "null" }
             )
 
             return@withContext GeneratedMunicipalityResult(

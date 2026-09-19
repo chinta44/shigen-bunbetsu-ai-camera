@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ScanHistoryEntity::class, AppConfigEntity::class, CustomMunicipalityEntity::class], version = 2, exportSchema = false)
+@Database(entities = [ScanHistoryEntity::class, AppConfigEntity::class, CustomMunicipalityEntity::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun scanHistoryDao(): ScanHistoryDao
     abstract fun appConfigDao(): AppConfigDao

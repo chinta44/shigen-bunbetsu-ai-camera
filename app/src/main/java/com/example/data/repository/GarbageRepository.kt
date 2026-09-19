@@ -212,7 +212,10 @@ class GarbageRepository(
             district = m.district,
             oversizedThresholdCm = m.oversizedThresholdCm,
             plasticRuleNotes = m.plasticRuleNotes,
-            schedulesJson = jsonArray.toString()
+            schedulesJson = jsonArray.toString(),
+            officialGuidePdfUrl = m.officialGuidePdfUrl,
+            officialGuidePdfTitle = m.officialGuidePdfTitle,
+            officialWebUrl = m.officialWebUrl
         )
     }
 
@@ -264,7 +267,10 @@ class GarbageRepository(
                 MunicipalityData.CAT_OVERSIZED,
                 MunicipalityData.CAT_HAZARDOUS
             ),
-            schedules = schedules
+            schedules = schedules,
+            officialGuidePdfUrl = e.officialGuidePdfUrl,
+            officialGuidePdfTitle = e.officialGuidePdfTitle,
+            officialWebUrl = e.officialWebUrl
         )
     }
 }

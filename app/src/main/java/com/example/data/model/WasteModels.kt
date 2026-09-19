@@ -138,7 +138,10 @@ data class Municipality(
     val plasticRuleNotes: String,
     val categories: List<WasteCategory>,
     val schedules: List<CollectionSchedule>,
-    val oversizedOfficialInfo: OversizedOfficialInfo? = null
+    val oversizedOfficialInfo: OversizedOfficialInfo? = null,
+    val officialGuidePdfUrl: String? = null, // 公式分別ハンドブック/早見表のPDFまたは閲覧URL
+    val officialGuidePdfTitle: String? = null, // e.g. "愛西市 家庭ごみ分別早見表（公式PDF）"
+    val officialWebUrl: String? = null // 自治体公式ごみ分別ポータルURL
 )
 
 /**
@@ -184,5 +187,7 @@ data class SortingResult(
     val isConfidenceHigh: Boolean = true,
     val confidenceScore: Int = 92, // 0 to 100 percentage
     val partsBreakdown: List<WastePartItem> = emptyList(),
-    val detectedTexts: List<String> = emptyList()
+    val detectedTexts: List<String> = emptyList(),
+    val officialGuidePdfUrl: String? = null,
+    val officialGuidePdfTitle: String? = null
 )

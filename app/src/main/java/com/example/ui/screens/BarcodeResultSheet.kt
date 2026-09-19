@@ -48,11 +48,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.barcode.BarcodeAnalysisResult
+import com.example.data.model.Municipality
+import com.example.ui.components.OfficialMunicipalityPdfCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarcodeResultSheet(
     result: BarcodeAnalysisResult,
+    municipality: Municipality? = null,
     onDismiss: () -> Unit,
     onViewCalendar: () -> Unit,
     onSpeak: (String) -> Unit
@@ -260,6 +263,11 @@ fun BarcodeResultSheet(
                     )
                 }
             }
+
+            // Official Municipality Sorting PDF & Handbook Link Card
+            OfficialMunicipalityPdfCard(
+                municipality = municipality
+            )
 
             // Action Buttons
             Row(

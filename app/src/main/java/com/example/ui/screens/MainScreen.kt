@@ -423,6 +423,7 @@ fun MainScreen(viewModel: GarbageViewModel) {
     activeBarcodeResult?.let { result ->
         BarcodeResultSheet(
             result = result,
+            municipality = currentMunicipality,
             onDismiss = { viewModel.dismissBarcodeResult() },
             onViewCalendar = {
                 viewModel.dismissBarcodeResult()

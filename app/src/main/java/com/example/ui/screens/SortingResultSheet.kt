@@ -58,6 +58,7 @@ import com.example.data.model.DesignatedBagProvider
 import com.example.data.model.DropoffCategory
 import com.example.data.model.Municipality
 import com.example.data.model.SortingResult
+import com.example.ui.components.OfficialMunicipalityPdfCard
 import com.example.ui.components.BulkyWasteOfficialCard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -781,6 +782,13 @@ fun SortingResultSheet(
                     }
                 }
             }
+
+            // Municipality Official Sorting PDF & Handbook Link Card
+            OfficialMunicipalityPdfCard(
+                municipality = municipality,
+                customPdfUrl = result.officialGuidePdfUrl,
+                customPdfTitle = result.officialGuidePdfTitle
+            )
 
             // Dropoff / Collection Box Recommendation Banner
             if (dropoffCat != null) {
