@@ -161,14 +161,27 @@ class GeminiWasteService {
             }
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            
+            // Primary model: gemini-3.8-flash (with seamless fallback to gemini-2.5-flash if 3.8 is not yet accessible in the key's tier)
+            val primaryUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$apiKey"
+            val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
 
-            val request = Request.Builder()
-                .url(url)
+            val primaryRequest = Request.Builder()
+                .url(primaryUrl)
                 .post(requestBody)
                 .build()
 
-            val response = client.newCall(request).execute()
+            var response = client.newCall(primaryRequest).execute()
+            if (!response.isSuccessful && (response.code == 404 || response.code == 400)) {
+                // If gemini-3.8-flash returns 404 or model not found on user API key tier, gracefully try gemini-2.5-flash
+                response.close()
+                val fallbackRequest = Request.Builder()
+                    .url(fallbackUrl)
+                    .post(requestBody)
+                    .build()
+                response = client.newCall(fallbackRequest).execute()
+            }
+
             if (!response.isSuccessful) {
                 return@withContext WasteAiAnalysisResult.Error("APIエラー: ${response.code}")
             }

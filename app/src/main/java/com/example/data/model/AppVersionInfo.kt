@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.8"
-    const val CURRENT_VERSION_CODE = 10
+    const val CURRENT_VERSION_NAME = "1.3.9"
+    const val CURRENT_VERSION_CODE = 11
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.3.9",
+            versionCode = 11,
+            releaseDate = "2026-09-19",
+            title = "Gemini 3.8 Flash AIエンジン搭載＆名古屋市公式分別PDF連携強化",
+            changes = listOf(
+                "【Gemini 3.8 Flash 実装】画像識別・分別解析および自治体ルール生成エンジンを最新の Gemini 3.8 Flash にアップグレード",
+                "キーの権限状況に応じて Gemini 2.5 Flash とのスマート二重冗長構成（フェイルオーバー）を確立し、404/通信エラーのない高い堅牢性を実現",
+                "【名古屋市公式分別PDF連携の完全修正】保存版分別ハンドブック原本PDFおよび公式ごみポータルへのダイレクト直通リンクを更新",
+                "【未登録地域向けSearch Fallback】全自治体共通で最新分別早見表・PDFをWebからワンタップで再検索できる安全ボタンを配備",
+                "【自治体微調整機能の拡張】自治体ルール設定画面から、公式PDF URLおよびWebポータルURLをユーザーが自由に登録・編集可能に"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.8",
             versionCode = 10,

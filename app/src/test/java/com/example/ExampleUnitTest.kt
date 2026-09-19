@@ -10,10 +10,10 @@ import org.junit.Test
 class ExampleUnitTest {
     @Test
     fun testVersionBumping() {
-        assertEquals("1.3.8", AppVersionManager.CURRENT_VERSION_NAME)
-        assertEquals(10, AppVersionManager.CURRENT_VERSION_CODE)
+        assertEquals("1.3.9", AppVersionManager.CURRENT_VERSION_NAME)
+        assertEquals(11, AppVersionManager.CURRENT_VERSION_CODE)
         assertTrue(AppVersionManager.VERSION_HISTORY.isNotEmpty())
-        assertEquals("1.3.8", AppVersionManager.VERSION_HISTORY.first().versionName)
+        assertEquals("1.3.9", AppVersionManager.VERSION_HISTORY.first().versionName)
     }
 
     @Test

@@ -148,7 +148,7 @@ fun ApiKeySettingsDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = if (isConfigured) "APIキー登録済み（AI画像認識が有効）" else "APIキー未登録（自治体辞書・ルールで動作）",
+                                text = if (isConfigured) "Gemini 3.8 Flash 有効（高精度AI画像認識）" else "APIキー未登録（自治体辞書・ルールで動作）",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isConfigured) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurface
@@ -156,9 +156,9 @@ fun ApiKeySettingsDialog(
                             Text(
                                 text = if (isConfigured) {
                                     val masked = if (currentApiKey.length > 8) "${currentApiKey.take(4)}••••••••${currentApiKey.takeLast(4)}" else "••••••••"
-                                    "現在のキー: $masked"
+                                    "現在のキー: $masked (Gemini 3.8 Flash / 2.5 Flash両対応)"
                                 } else {
-                                    "未設定でも各自治体の分別ルール・検索機能はそのまま利用できます"
+                                    "Google AI Studioのキー登録で最新Gemini 3.8 Flashの高精度認識が有効化されます"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -101,12 +101,23 @@ class MunicipalityAiService {
             }
 
             val requestBody = jsonPayload.toString().toRequestBody("application/json".toMediaType())
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey")
+            val primaryUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$apiKey"
+            val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+
+            val primaryRequest = Request.Builder()
+                .url(primaryUrl)
                 .post(requestBody)
                 .build()
 
-            val response = client.newCall(request).execute()
+            var response = client.newCall(primaryRequest).execute()
+            if (!response.isSuccessful && (response.code == 404 || response.code == 400)) {
+                response.close()
+                val fallbackRequest = Request.Builder()
+                    .url(fallbackUrl)
+                    .post(requestBody)
+                    .build()
+                response = client.newCall(fallbackRequest).execute()
+            }
             val responseBody = response.body?.string()
 
             if (!response.isSuccessful || responseBody.isNullOrBlank()) {
