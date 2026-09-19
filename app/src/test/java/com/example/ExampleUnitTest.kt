@@ -35,6 +35,11 @@ class ExampleUnitTest {
         val ichinomiya = MunicipalityData.ICHINOMIYA
         assertNotNull("ICHINOMIYA should have official guide PDF URL", ichinomiya.officialGuidePdfUrl)
         assertTrue("ICHINOMIYA PDF should point to direct PDF", ichinomiya.officialGuidePdfUrl!!.endsWith(".pdf"))
+
+        val nagoya = MunicipalityData.NAGOYA
+        assertNotNull("NAGOYA should have official guide PDF URL", nagoya.officialGuidePdfUrl)
+        assertTrue("NAGOYA PDF should point to direct PDF", nagoya.officialGuidePdfUrl!!.endsWith(".pdf"))
+        assertTrue("NAGOYA PDF URL should point to city.nagoya.jp", nagoya.officialGuidePdfUrl!!.contains("city.nagoya.jp"))
     }
 
     @Test

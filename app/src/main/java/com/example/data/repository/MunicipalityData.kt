@@ -198,8 +198,8 @@ object MunicipalityData {
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "区役所・環境事業所等の専用回収ボックス（開庁時間中随時）")
         ),
         oversizedOfficialInfo = NAGOYA_OVERSIZED,
-        officialGuidePdfUrl = "https://www.city.nagoya.jp/kankyo/page/0000008544.html",
-        officialGuidePdfTitle = "名古屋市 家庭ごみ・資源の分け方・出し方パンフレット（公式PDF）",
+        officialGuidePdfUrl = "https://www.city.nagoya.jp/_res/projects/default_project/_page_/001/042/497/20260318_guide_hozonban.pdf",
+        officialGuidePdfTitle = "名古屋市 ごみ・資源の分け方・出し方ハンドブック（公式PDF）",
         officialWebUrl = "https://www.city.nagoya.jp/kurashi/category/5-3-0-0-0-0-0-0-0-0.html"
     )
 

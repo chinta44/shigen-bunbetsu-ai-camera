@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -57,6 +58,9 @@ fun MunicipalityEditDialog(
     var district by remember { mutableStateOf(municipality.district) }
     var thresholdCm by remember { mutableIntStateOf(municipality.oversizedThresholdCm) }
     var plasticNotes by remember { mutableStateOf(municipality.plasticRuleNotes) }
+    var pdfUrl by remember { mutableStateOf(municipality.officialGuidePdfUrl ?: "") }
+    var pdfTitle by remember { mutableStateOf(municipality.officialGuidePdfTitle ?: "") }
+    var officialWebUrl by remember { mutableStateOf(municipality.officialWebUrl ?: "") }
 
     // Find current days from existing schedules
     val burnableSchedules = municipality.schedules.filter { it.categoryId == "burnable" }
@@ -260,6 +264,67 @@ fun MunicipalityEditDialog(
                     maxLines = 3,
                     shape = RoundedCornerShape(10.dp)
                 )
+
+                // Official PDF & Web Portal Customization
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "自治体公式 分別PDF・Webリンク設定",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = "自治体の公式分別早見表PDFや公式ごみ分別ページのURLを直接登録・修正できます。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        OutlinedTextField(
+                            value = pdfUrl,
+                            onValueChange = { pdfUrl = it },
+                            label = { Text("公式分別PDFまたは案内ページのURL (https://...)") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("municipality_edit_pdf_url_input"),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = pdfTitle,
+                            onValueChange = { pdfTitle = it },
+                            label = { Text("PDF / ハンドブックの表示タイトル") },
+                            placeholder = { Text("${name.ifBlank { "自治体" }} ごみ分別早見表（公式PDF）") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = officialWebUrl,
+                            onValueChange = { officialWebUrl = it },
+                            label = { Text("公式ごみ分別WebポータルのURL (任意)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -280,7 +345,10 @@ fun MunicipalityEditDialog(
                         district = district.trim(),
                         oversizedThresholdCm = thresholdCm,
                         plasticRuleNotes = plasticNotes.trim(),
-                        schedules = updatedSchedules
+                        schedules = updatedSchedules,
+                        officialGuidePdfUrl = pdfUrl.trim().ifBlank { null },
+                        officialGuidePdfTitle = pdfTitle.trim().ifBlank { null },
+                        officialWebUrl = officialWebUrl.trim().ifBlank { null }
                     )
                     onSave(updated)
                 }
