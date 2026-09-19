@@ -92,7 +92,7 @@ object MunicipalityData {
     )
 
     val AISAI_OVERSIZED = OversizedOfficialInfo(
-        reservationWebUrl = "https://www.city.aisai.lg.jp/contents_detail.php?co=cat&frmId=442&secId=10",
+        reservationWebUrl = "https://www.city.aisai.lg.jp/0000017270.html",
         phoneReservationNumber = "0567243435",
         phoneReservationDisplay = "0567-24-3435（戸別収集受付）",
         receptionHours = "平日 8:30〜17:15（土日祝・年末年始を除く）",
@@ -397,9 +397,9 @@ object MunicipalityData {
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・支所・公民館等の専用回収ボックス（開館中随時）")
         ),
         oversizedOfficialInfo = AISAI_OVERSIZED,
-        officialGuidePdfUrl = "https://www.city.aisai.lg.jp/contents_detail.php?frmId=442",
-        officialGuidePdfTitle = "愛西市 家庭ごみ分別早見表（公式PDF・詳細ガイド）",
-        officialWebUrl = "https://www.city.aisai.lg.jp/contents_detail.php?frmId=442"
+        officialGuidePdfUrl = "https://www.city.aisai.lg.jp/cmsfiles/contents/0000017/17270/25.pdf",
+        officialGuidePdfTitle = "愛西市 家庭ごみ分別早見表（公式PDF・原本）",
+        officialWebUrl = "https://www.city.aisai.lg.jp/0000017270.html"
     )
 
     val TSUSHIMA = Municipality(
@@ -418,9 +418,9 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（電話申込）"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・公共施設等の回収BOX")
         ),
-        officialGuidePdfUrl = "https://www.city.tsushima.lg.jp/kurashi/gomi/gomidashikata/index.html",
-        officialGuidePdfTitle = "津島市 ごみの出し方・分別ガイド（公式）",
-        officialWebUrl = "https://www.city.tsushima.lg.jp/kurashi/gomi/"
+        officialGuidePdfUrl = "https://www.city.tsushima.lg.jp/kurashi/gomirecycle/kateigomishigen.files/20250701-cleaned.pdf",
+        officialGuidePdfTitle = "津島市 家庭ごみと資源の分け方・出し方（公式PDF）",
+        officialWebUrl = "https://www.city.tsushima.lg.jp/kurashi/gomirecycle/kateigomishigen.html"
     )
 
     val YATOMI = Municipality(
@@ -438,9 +438,9 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制または八穂持込"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "総合社会教育センター等回収BOX")
         ),
-        officialGuidePdfUrl = "https://www.city.yatomi.lg.jp/kurashi/kankyo/1000780/index.html",
-        officialGuidePdfTitle = "弥富市 ごみの出し方・分別ハンドブック（公式）",
-        officialWebUrl = "https://www.city.yatomi.lg.jp/kurashi/kankyo/"
+        officialGuidePdfUrl = "https://www.city.yatomi.lg.jp/_res/projects/default_project/_page_/001/000/407/R8_A.pdf",
+        officialGuidePdfTitle = "弥富市 一般家庭ごみ収集日程表・分別ガイド（公式PDF）",
+        officialWebUrl = "https://www.city.yatomi.lg.jp/kurashi/1000403/1005465/1005467/1000406/index.html"
     )
 
     val ICHINOMIYA = Municipality(
@@ -458,9 +458,9 @@ object MunicipalityData {
             CollectionSchedule("oversized", null, ScheduleRecurrence.OnDemandReservation, "事前予約制（粗大ごみ受付）"),
             CollectionSchedule("small_appliance", null, ScheduleRecurrence.OnDemandReservation, "市役所・出張所等回収BOX")
         ),
-        officialGuidePdfUrl = "https://www.city.ichinomiya.aichi.jp/shisei/shisetsu/kankyo/1000062.html",
-        officialGuidePdfTitle = "一宮市 家庭ごみの分け方・出し方（公式PDF）",
-        officialWebUrl = "https://www.city.ichinomiya.aichi.jp/shisei/shisetsu/kankyo/"
+        officialGuidePdfUrl = "https://www.city.ichinomiya.aichi.jp/_res/projects/default_project/_page_/001/010/401/all.R8.8.pdf",
+        officialGuidePdfTitle = "一宮市 家庭ごみの分け方・出し方ガイド（公式PDF）",
+        officialWebUrl = "https://www.city.ichinomiya.aichi.jp/kurashi/gomi/1010401.html"
     )
 
     val ALL_MUNICIPALITIES: List<Municipality> = listOf(

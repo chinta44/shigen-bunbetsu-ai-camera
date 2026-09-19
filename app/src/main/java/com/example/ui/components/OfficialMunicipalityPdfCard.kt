@@ -227,8 +227,34 @@ fun OfficialMunicipalityPdfCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("${mName} ごみ分別公式Webを開く", fontSize = 13.sp)
+                        Text("${mName} ごみ分別公式Webポータルを開く", fontSize = 13.sp)
                     }
+                }
+
+                // Additional helper link: Google Search fallback if municipality site reorganizes
+                OutlinedButton(
+                    onClick = {
+                        try {
+                            val query = "$mName ごみ 分別 早見表 PDF ガイド"
+                            val searchUrl = "https://www.google.com/search?q=${URLEncoder.encode(query, "UTF-8")}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl)).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "検索を開けませんでした", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("🔍 Webで最新の分別情報・PDFを再検索", fontSize = 12.sp)
                 }
             } else {
                 // Fallback: Search for municipality sorting PDF

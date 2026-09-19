@@ -21,7 +21,20 @@ class ExampleUnitTest {
         val aisai = MunicipalityData.AISAI
         assertNotNull("AISAI should have official guide PDF URL", aisai.officialGuidePdfUrl)
         assertTrue("URL should be HTTPS", aisai.officialGuidePdfUrl!!.startsWith("https://"))
+        assertTrue("Aisai PDF should point to direct PDF", aisai.officialGuidePdfUrl!!.endsWith(".pdf"))
         assertNotNull("AISAI should have official guide title", aisai.officialGuidePdfTitle)
+
+        val tsushima = MunicipalityData.TSUSHIMA
+        assertNotNull("TSUSHIMA should have official guide PDF URL", tsushima.officialGuidePdfUrl)
+        assertTrue("TSUSHIMA PDF should point to direct PDF", tsushima.officialGuidePdfUrl!!.endsWith(".pdf"))
+
+        val yatomi = MunicipalityData.YATOMI
+        assertNotNull("YATOMI should have official guide PDF URL", yatomi.officialGuidePdfUrl)
+        assertTrue("YATOMI PDF should point to direct PDF", yatomi.officialGuidePdfUrl!!.endsWith(".pdf"))
+
+        val ichinomiya = MunicipalityData.ICHINOMIYA
+        assertNotNull("ICHINOMIYA should have official guide PDF URL", ichinomiya.officialGuidePdfUrl)
+        assertTrue("ICHINOMIYA PDF should point to direct PDF", ichinomiya.officialGuidePdfUrl!!.endsWith(".pdf"))
     }
 
     @Test
