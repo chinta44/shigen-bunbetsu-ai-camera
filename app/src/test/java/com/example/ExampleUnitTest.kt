@@ -10,10 +10,10 @@ import org.junit.Test
 class ExampleUnitTest {
     @Test
     fun testVersionBumping() {
-        assertEquals("1.4.0", AppVersionManager.CURRENT_VERSION_NAME)
-        assertEquals(12, AppVersionManager.CURRENT_VERSION_CODE)
+        assertEquals("1.4.1", AppVersionManager.CURRENT_VERSION_NAME)
+        assertEquals(13, AppVersionManager.CURRENT_VERSION_CODE)
         assertTrue(AppVersionManager.VERSION_HISTORY.isNotEmpty())
-        assertEquals("1.4.0", AppVersionManager.VERSION_HISTORY.first().versionName)
+        assertEquals("1.4.1", AppVersionManager.VERSION_HISTORY.first().versionName)
     }
 
     @Test
@@ -104,5 +104,32 @@ class ExampleUnitTest {
         assertFalse(manager.isVersionNewer("1.3.6", "1.3.6"))
         assertFalse(manager.isVersionNewer("1.3.5", "1.3.6"))
         assertFalse(manager.isVersionNewer("1.2.0", "1.3.6"))
+    }
+
+    @Test
+    fun testMunicipalityLinkResolver() {
+        val resolver = com.example.data.util.MunicipalityLinkResolver
+
+        // PDF Detection
+        assertTrue(resolver.isPdfUrl("https://www.city.nagoya.jp/guide.pdf"))
+        assertTrue(resolver.isPdfUrl("https://www.city.nagoya.jp/guide.PDF"))
+        assertTrue(resolver.isPdfUrl("https://www.city.nagoya.jp/guide.pdf?query=123"))
+        assertFalse(resolver.isPdfUrl("https://www.city.nagoya.jp/guide.html"))
+        assertFalse(resolver.isPdfUrl(null))
+        assertFalse(resolver.isPdfUrl(""))
+
+        // Domain Extraction
+        assertEquals("www.city.nagoya.jp", resolver.extractDomain("https://www.city.nagoya.jp/kurashi/category/5.html"))
+        assertEquals("city.aisai.lg.jp", resolver.extractDomain("https://city.aisai.lg.jp/index.html"))
+        assertNull(resolver.extractDomain(null))
+        assertNull(resolver.extractDomain("invalid-url"))
+
+        // Search URL generation
+        val searchWithDomain = resolver.buildSearchUrl("名古屋市", "https://www.city.nagoya.jp/kurashi/")
+        assertTrue(searchWithDomain.contains("google.com"))
+        assertTrue(searchWithDomain.contains("site") || searchWithDomain.contains("city.nagoya.jp"))
+
+        val searchWithoutDomain = resolver.buildSearchUrl("愛西市", null)
+        assertTrue(searchWithoutDomain.contains("google.com"))
     }
 }

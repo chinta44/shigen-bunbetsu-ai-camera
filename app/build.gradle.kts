@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.gomi.bunbetsu"
     minSdk = 24
     targetSdk = 36
-    versionCode = 12
-    versionName = "1.4.0"
+    versionCode = 13
+    versionName = "1.4.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -89,6 +89,7 @@ dependencies {
   implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.browser)
   implementation(libs.androidx.camera.camera2)
   implementation(libs.androidx.camera.core)
   implementation(libs.androidx.camera.lifecycle)

@@ -79,9 +79,9 @@ fun OfficialHandbookViewerDialog(
     val context = LocalContext.current
     var currentUrl by remember {
         mutableStateOf(
-            pdfUrl?.takeIf { it.isNotBlank() }
-                ?: officialWebUrl?.takeIf { it.isNotBlank() }
-                ?: "https://www.google.com/search?q=${URLEncoder.encode("$municipalityName ごみ 分別 早見表 PDF", "UTF-8")}"
+            officialWebUrl?.takeIf { it.isNotBlank() }
+                ?: pdfUrl?.takeIf { it.isNotBlank() }
+                ?: MunicipalityLinkResolver.buildSearchUrl(municipalityName, officialWebUrl)
         )
     }
 
@@ -165,19 +165,12 @@ fun OfficialHandbookViewerDialog(
                             }
                             IconButton(
                                 onClick = {
-                                    try {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(currentUrl)).apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "ブラウザを開けませんでした", Toast.LENGTH_SHORT).show()
-                                    }
+                                    MunicipalityLinkResolver.launchCustomTabOrBrowser(context, currentUrl)
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                    contentDescription = "外部ブラウザで開く",
+                                    contentDescription = "ブラウザ/PDFビューアで開く",
                                     tint = Color.White
                                 )
                             }
@@ -191,6 +184,50 @@ fun OfficialHandbookViewerDialog(
                         modifier = Modifier.fillMaxWidth(),
                         color = Color(0xFFE53935)
                     )
+                }
+
+                // Direct PDF Banner (displayed when viewing a PDF URL)
+                val isPdfDirect = MunicipalityLinkResolver.isPdfUrl(currentUrl)
+                if (isPdfDirect) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "📄 原本PDF資料",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC62828),
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = "高画質・快適に閲覧・保存するにはビューアをご利用ください",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF555555)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    MunicipalityLinkResolver.launchCustomTabOrBrowser(context, currentUrl)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("PDFを開く", fontSize = 12.sp)
+                            }
+                        }
+                    }
                 }
 
                 // Smart Fallback Error Banner (shown if URL is broken / 404)
@@ -215,14 +252,14 @@ fun OfficialHandbookViewerDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "自治体のPDFリンクが変更または休止中です",
+                                    text = "自治体のリンクが変更または休止中です",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE65100)
                                 )
                             }
                             Text(
-                                text = "自治体のWebサイト更新に伴い、直リンク先のPDFファイルが移動または更新された可能性があります。以下のスマート検索または公式ポータルをご利用ください。",
+                                text = "自治体のWebサイト更新に伴い、ページまたはPDFファイルが移動・更新された可能性があります。以下のスマート検索または公式ポータルをご利用ください。",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFF5D4037),
                                 lineHeight = 18.sp
@@ -236,8 +273,7 @@ fun OfficialHandbookViewerDialog(
                                     onClick = {
                                         hasLoadError = false
                                         isLoading = true
-                                        val query = "$municipalityName ごみ 分別 早見表 PDF"
-                                        val googleSearch = "https://www.google.com/search?q=${URLEncoder.encode(query, "UTF-8")}"
+                                        val googleSearch = MunicipalityLinkResolver.buildSearchUrl(municipalityName, officialWebUrl)
                                         currentUrl = googleSearch
                                         webViewInstance?.loadUrl(googleSearch)
                                     },
@@ -247,7 +283,7 @@ fun OfficialHandbookViewerDialog(
                                 ) {
                                     Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("最新PDFを検索", fontSize = 12.sp)
+                                    Text("最新情報を検索", fontSize = 12.sp)
                                 }
 
                                 if (!officialWebUrl.isNullOrBlank()) {
@@ -286,6 +322,10 @@ fun OfficialHandbookViewerDialog(
                                     displayZoomControls = false
                                     setSupportZoom(true)
                                 }
+                                setDownloadListener { downloadUrl, _, _, _, _ ->
+                                    // When a download (such as PDF) is triggered, launch with Custom Tabs or browser
+                                    MunicipalityLinkResolver.launchCustomTabOrBrowser(ctx, downloadUrl)
+                                }
                                 webViewClient = object : WebViewClient() {
                                     override fun onPageFinished(view: WebView?, url: String?) {
                                         super.onPageFinished(view, url)
@@ -310,6 +350,11 @@ fun OfficialHandbookViewerDialog(
                                         request: WebResourceRequest?
                                     ): Boolean {
                                         val url = request?.url?.toString() ?: return false
+                                        // Intercept direct PDF links to prevent blank WebView rendering
+                                        if (MunicipalityLinkResolver.isPdfUrl(url)) {
+                                            MunicipalityLinkResolver.launchCustomTabOrBrowser(ctx, url)
+                                            return true
+                                        }
                                         return if (url.startsWith("http://") || url.startsWith("https://")) {
                                             false // Load within WebView
                                         } else {

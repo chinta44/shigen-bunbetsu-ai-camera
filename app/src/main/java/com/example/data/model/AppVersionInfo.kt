@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.0"
-    const val CURRENT_VERSION_CODE = 12
+    const val CURRENT_VERSION_NAME = "1.4.1"
+    const val CURRENT_VERSION_CODE = 13
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.1",
+            versionCode = 13,
+            releaseDate = "2026-09-20",
+            title = "自治体PDFリンク問題の抜本改善＆Chrome Custom TabsネイティブPDF表示",
+            changes = listOf(
+                "【白画面フリーズの根本解決】Android WebViewがPDFを直接レンダリングできない問題を解決し、Chrome Custom Tabs (CCT) / ネイティブPDFハンドラーへ安全に委譲するアーキテクチャを確立",
+                "【二段構えの公式情報閲覧】永続的で軽量な自治体公式HTMLポータルをアプリ内WebViewで高速表示し、原本PDFはChrome Custom Tabsで快適・高画質に閲覧できるUXに刷新",
+                "【ドメイン限定スマート再検索】自治体の年度更新（4月・10月）でPDF URLが404になっても、自治体ドメイン限定検索（site:domain）により最新の早見表PDFを1タップで自動発見",
+                "【Webポータル内のPDF自動検知】アプリ内WebViewで自治体Webページを回覧中、ページ内のPDFリンクを踏んだ場合も自動検知してCustom Tabsへシームレスに引き渡し"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.0",
             versionCode = 12,

@@ -173,9 +173,17 @@ fun OfficialMunicipalityPdfCard(
             }
 
             // Action Buttons
-            // Button 1: Smart In-App Viewer (Safely loads with fallback error handling)
+            // Button 1: Open Official PDF directly using Chrome Custom Tabs (High-speed, native PDF rendering without blank screen)
             Button(
-                onClick = { isViewerDialogOpen = true },
+                onClick = {
+                    if (hasDirectPdf) {
+                        MunicipalityLinkResolver.openPdfSafely(context, mName, pdfUrl, officialWebUrl)
+                    } else if (!officialWebUrl.isNullOrBlank()) {
+                        isViewerDialogOpen = true
+                    } else {
+                        MunicipalityLinkResolver.searchOfficialPdf(context, mName, officialWebUrl)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("open_official_pdf_button"),
@@ -192,7 +200,7 @@ fun OfficialMunicipalityPdfCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "📄 公式分別PDF（早見表）を開く",
+                    text = if (hasDirectPdf) "📄 公式分別PDF（早見表）を開く" else "🌐 公式分別ポータルを開く",
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -205,11 +213,11 @@ fun OfficialMunicipalityPdfCard(
                 )
             }
 
-            // Button 2: Direct Municipality Portal URL
+            // Button 2: Direct Municipality Portal URL (in-app Web Viewer)
             if (!officialWebUrl.isNullOrBlank()) {
                 OutlinedButton(
                     onClick = {
-                        MunicipalityLinkResolver.openOfficialPortal(context, mName, officialWebUrl)
+                        isViewerDialogOpen = true
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
@@ -220,14 +228,14 @@ fun OfficialMunicipalityPdfCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("${mName} ごみ分別公式ポータルを開く", fontSize = 13.sp)
+                    Text("${mName} ごみ分別公式ポータル（Web）", fontSize = 13.sp)
                 }
             }
 
-            // Button 3: Smart Fallback Search (Always guaranteed to work even if city changes URLs completely)
+            // Button 3: Smart Fallback Search (Guaranteed to find current-year PDFs even after city site renewals)
             OutlinedButton(
                 onClick = {
-                    MunicipalityLinkResolver.searchOfficialPdf(context, mName)
+                    MunicipalityLinkResolver.searchOfficialPdf(context, mName, officialWebUrl)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
@@ -243,7 +251,7 @@ fun OfficialMunicipalityPdfCard(
         }
     }
 
-    // In-App Smart Viewer Dialog
+    // In-App Smart Viewer Dialog (Optimized for Web Portals & Fallback Search)
     if (isViewerDialogOpen) {
         OfficialHandbookViewerDialog(
             municipalityName = mName,
