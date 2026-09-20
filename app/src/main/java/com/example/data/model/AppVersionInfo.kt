@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.3.9"
-    const val CURRENT_VERSION_CODE = 11
+    const val CURRENT_VERSION_NAME = "1.4.0"
+    const val CURRENT_VERSION_CODE = 12
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.0",
+            versionCode = 12,
+            releaseDate = "2026-09-20",
+            title = "PDFリンク切れの根本的解決＆アプリ内スマートPDF・Webビューア搭載",
+            changes = listOf(
+                "【PDFリンク切れ根本解決（Smart Link Fallback）】自治体サイトの更新・URL変更に伴う404リンク切れを自動検知し、多段階で安全に回避するフォールバックエンジンを新開発",
+                "【アプリ内スマートPDF・ハンドブックビューア】直リンクが切れていても画面を真っ白にせず、自治体公式分別ポータルや最新PDFダイレクト検索へ即時接続する内蔵ビューアを実装",
+                "【主要自治体の公式リンク強化】愛西市、名古屋市、横浜市、渋谷区、大阪市、札幌市、福岡市等の公式PDFおよび分別ポータルリンクを最新URLに更新",
+                "【Webダイレクト再検索ボタン常設】各自治体ごとに『自治体名＋ごみ分別早見表PDF』を確実にヒットさせるワンタップ検索リンクを常に配備し、将来のURL変更にも永続対応",
+                "【アプリバージョン1.4.0への更新】安定性とリンク信頼性を大幅に向上"
+            )
+        ),
         VersionRelease(
             versionName = "1.3.9",
             versionCode = 11,

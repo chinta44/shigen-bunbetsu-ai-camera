@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +33,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,12 +46,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Municipality
+import com.example.data.util.MunicipalityLinkResolver
+import com.example.ui.screens.OfficialHandbookViewerDialog
 import java.net.URLEncoder
 
 /**
  * Official Municipality Waste Sorting PDF & Handbook Link Card
- * Provides direct access to municipality-issued PDF guidelines and sorting charts
- * for verifying AI classifications.
+ * Provides robust 3-stage link resolution to completely solve the municipality PDF link rot issue.
  */
 @Composable
 fun OfficialMunicipalityPdfCard(
@@ -57,6 +63,8 @@ fun OfficialMunicipalityPdfCard(
 ) {
     val context = LocalContext.current
     val mName = municipality?.name ?: "お住まいの自治体"
+
+    var isViewerDialogOpen by remember { mutableStateOf(false) }
 
     val pdfUrl = customPdfUrl?.takeIf { it.isNotBlank() }
         ?: municipality?.officialGuidePdfUrl?.takeIf { it.isNotBlank() }
@@ -117,7 +125,7 @@ fun OfficialMunicipalityPdfCard(
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                text = "公認ガイド",
+                                text = "原本照合",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFC62828),
@@ -126,7 +134,7 @@ fun OfficialMunicipalityPdfCard(
                         }
                     }
                     Text(
-                        text = "判定の確認・詳細ルールの原本照合",
+                        text = "AI判定の確認・詳細ルールの原本照合（リンク切れ自動回避機能付き）",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -153,7 +161,7 @@ fun OfficialMunicipalityPdfCard(
                     )
                     Text(
                         text = if (hasDirectPdf) {
-                            "AIの判定結果が正しいか、$mName が発行している公式分別早見表・ハンドブックPDFの原本を開いて直接ご確認いただけます。"
+                            "AIの判定結果が正しいか、$mName の公式分別早見表・ハンドブック原本を開いて直接確認できます。リンク切れが起きてもアプリ内自動検索で最新版へ即時フォールバックします。"
                         } else {
                             "$mName の公式ごみ分別ガイドや早見表PDFを検索・確認できます。"
                         },
@@ -165,125 +173,84 @@ fun OfficialMunicipalityPdfCard(
             }
 
             // Action Buttons
-            if (pdfUrl != null) {
-                Button(
-                    onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl)).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "リンクを開けませんでした: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("open_official_pdf_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD32F2F)
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Description,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "📄 公式分別PDF（早見表）を開く",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.White.copy(alpha = 0.8f)
-                    )
-                }
+            // Button 1: Smart In-App Viewer (Safely loads with fallback error handling)
+            Button(
+                onClick = { isViewerDialogOpen = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("open_official_pdf_button"),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFD32F2F)
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "📄 公式分別PDF（早見表）を開く",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = Color.White.copy(alpha = 0.85f)
+                )
+            }
 
-                if (!officialWebUrl.isNullOrBlank() && officialWebUrl != pdfUrl) {
-                    OutlinedButton(
-                        onClick = {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(officialWebUrl)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "リンクを開けませんでした", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Language,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("${mName} ごみ分別公式Webポータルを開く", fontSize = 13.sp)
-                    }
-                }
-
-                // Additional helper link: Google Search fallback if municipality site reorganizes
+            // Button 2: Direct Municipality Portal URL
+            if (!officialWebUrl.isNullOrBlank()) {
                 OutlinedButton(
                     onClick = {
-                        try {
-                            val query = "$mName ごみ 分別 早見表 PDF ガイド"
-                            val searchUrl = "https://www.google.com/search?q=${URLEncoder.encode(query, "UTF-8")}"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl)).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "検索を開けませんでした", Toast.LENGTH_SHORT).show()
-                        }
+                        MunicipalityLinkResolver.openOfficialPortal(context, mName, officialWebUrl)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Search,
+                        imageVector = Icons.Default.Language,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("🔍 Webで最新の分別情報・PDFを再検索", fontSize = 12.sp)
-                }
-            } else {
-                // Fallback: Search for municipality sorting PDF
-                Button(
-                    onClick = {
-                        try {
-                            val query = "$mName ごみ 分別 早見表 PDF ガイド"
-                            val searchUrl = "https://www.google.com/search?q=${URLEncoder.encode(query, "UTF-8")}"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl)).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "検索を開けませんでした", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("🔍 ${mName}の分別PDFをWebで探す", fontWeight = FontWeight.Bold)
+                    Text("${mName} ごみ分別公式ポータルを開く", fontSize = 13.sp)
                 }
             }
+
+            // Button 3: Smart Fallback Search (Always guaranteed to work even if city changes URLs completely)
+            OutlinedButton(
+                onClick = {
+                    MunicipalityLinkResolver.searchOfficialPdf(context, mName)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("🔍 Webで最新の分別PDF・早見表をダイレクト再検索", fontSize = 12.sp)
+            }
         }
+    }
+
+    // In-App Smart Viewer Dialog
+    if (isViewerDialogOpen) {
+        OfficialHandbookViewerDialog(
+            municipalityName = mName,
+            pdfUrl = pdfUrl,
+            officialWebUrl = officialWebUrl,
+            title = pdfTitle,
+            onDismiss = { isViewerDialogOpen = false }
+        )
     }
 }
