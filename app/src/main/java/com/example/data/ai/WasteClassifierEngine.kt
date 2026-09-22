@@ -47,20 +47,30 @@ class WasteClassifierEngine(
                 is WasteAiAnalysisResult.Success -> {
                     val parsed = parseAiResponse(aiResult.jsonText, municipality)
                     if (parsed != null) return parsed
-                }
-                is WasteAiAnalysisResult.Error -> {
-                    // Fall back to rule engine below
+                    // If JSON parsing fails:
+                    if (!targetItemHint.isNullOrBlank()) return analyzeByKeyword(targetItemHint, municipality)
+                    if (!fallbackItemKeyword.isNullOrBlank()) return analyzeByKeyword(fallbackItemKeyword, municipality)
+                    return AnalysisOutput.Error("AIの解析結果を処理できませんでした。もう一度撮影するか、品名検索をご利用ください。")
                 }
                 is WasteAiAnalysisResult.KeyMissing -> {
-                    // Fall back to rule engine below
+                    // Stop silent fallback to plastic case!
+                    if (!targetItemHint.isNullOrBlank()) return analyzeByKeyword(targetItemHint, municipality)
+                    if (!fallbackItemKeyword.isNullOrBlank()) return analyzeByKeyword(fallbackItemKeyword, municipality)
+                    return AnalysisOutput.Error("Gemini APIキーが未設定です。右上の鍵アイコン🔑から無料のAPIキーを登録すると、高精度なAI画像認識をご利用いただけます。")
+                }
+                is WasteAiAnalysisResult.Error -> {
+                    // Stop silent fallback to plastic case!
+                    if (!targetItemHint.isNullOrBlank()) return analyzeByKeyword(targetItemHint, municipality)
+                    if (!fallbackItemKeyword.isNullOrBlank()) return analyzeByKeyword(fallbackItemKeyword, municipality)
+                    return AnalysisOutput.Error("AI画像判定エラー: ${aiResult.message}\nAPIキーの有効性や通信状態をご確認ください。")
                 }
             }
         }
 
-        // Rule-based fallback or keyword based analysis
+        // Keyword based analysis (Only used when no bitmap is supplied)
         val query = targetItemHint?.trim()?.ifBlank { null }
             ?: fallbackItemKeyword?.trim()
-            ?: "プラスチックケース"
+            ?: "不用品"
         return analyzeByKeyword(query, municipality)
     }
 
@@ -69,6 +79,42 @@ class WasteClassifierEngine(
      */
     fun analyzeByKeyword(query: String, municipality: Municipality): AnalysisOutput {
         val q = query.lowercase()
+
+        // 0-AA. Footwear / Shoes / Sandals / Crocs (サンダル・クロックス・靴・スニーカー・長靴・スリッパ)
+        if (q.contains("サンダル") || q.contains("クロックス") || q.contains("スニーカー") ||
+            q.contains("靴") || q.contains("シューズ") || q.contains("スリッパ") ||
+            q.contains("長靴") || q.contains("ブーツ") || q.contains("革靴") || q.contains("パンプス") || q.contains("履物")) {
+            val burnableCat = municipality.categories.firstOrNull { it.id == "burnable" }
+                ?: MunicipalityData.CAT_BURNABLE
+            val schedule = municipality.schedules.firstOrNull { it.categoryId == burnableCat.id }
+            val nextInfo = schedule?.getNextCollectionDate() ?: municipality.schedules.first().getNextCollectionDate()
+
+            val displayName = when {
+                q.contains("クロックス") -> "サンダル（クロックス等・樹脂製）"
+                q.contains("サンダル") -> "サンダル・履物"
+                q.contains("スニーカー") -> "スニーカー・運動靴"
+                q.contains("長靴") -> "長靴・レインブーツ"
+                q.contains("革靴") -> "革靴・ビジネスシューズ"
+                else -> query.trim()
+            }
+
+            return AnalysisOutput.Resolved(
+                SortingResult(
+                    itemName = displayName,
+                    categoryName = burnableCat.name,
+                    categoryId = burnableCat.id,
+                    colorHex = burnableCat.colorHex,
+                    municipalityName = municipality.name,
+                    nextDateText = nextInfo.dateText + nextInfo.dayOfWeekText,
+                    daysRemainingText = nextInfo.daysRemainingText,
+                    disposalAdvice = "${municipality.name}では、サンダル・スニーカー・靴などの履物は【${burnableCat.name}】です。\n" +
+                            "※樹脂製（EVA・クロックス等）やゴム製であっても、商品容器包装ではないためプラスチック資源ごみには出せません。指定の可燃ごみ袋に入れてお出しください。\n" +
+                            "※外せる金属金具は不燃ごみへ。外せない小さな金具はそのまま可燃ごみで出せます。",
+                    sizeMaterialNotes = "${municipality.name}の履物・生活用品分別基準（燃やすごみ）に適合しています。",
+                    requiresReservation = false
+                )
+            )
+        }
 
         // 0. Leather goods / Wallets / Pouches (革財布・長財布・レザー製品)
         if (q.contains("財布") || q.contains("革") || q.contains("レザー") || q.contains("ウォレット") || q.contains("定期入れ") || q.contains("名刺入れ")) {
@@ -1032,6 +1078,20 @@ class WasteClassifierEngine(
         municipality: Municipality
     ): com.example.data.model.WasteCategory {
         val fullText = "$categoryHint $itemName $reason $advice".lowercase()
+
+        // 0. 履物・靴類・サンダル（EVA樹脂サンダル・クロックス・スニーカー・靴・スリッパ等）
+        // 樹脂製品であっても容器包装ではないため、プラスチック資源ではなく必ず「可燃ごみ」へルーティング
+        val isFootwear = itemName.contains("サンダル") || itemName.contains("クロックス") ||
+                itemName.contains("スニーカー") || itemName.contains("靴") ||
+                itemName.contains("シューズ") || itemName.contains("スリッパ") ||
+                itemName.contains("長靴") || itemName.contains("ブーツ") ||
+                itemName.contains("革靴") || itemName.contains("パンプス") ||
+                itemName.contains("草履") || itemName.contains("下駄")
+        if (isFootwear && !categoryHint.contains("粗大")) {
+            val burnableCat = municipality.categories.firstOrNull { it.id == "burnable" }
+                ?: MunicipalityData.CAT_BURNABLE
+            return burnableCat
+        }
 
         // 1. 小型家電・バッテリー内蔵機器
         val isCircuitBoard = fullText.contains("基板") || fullText.contains("制御基板") ||

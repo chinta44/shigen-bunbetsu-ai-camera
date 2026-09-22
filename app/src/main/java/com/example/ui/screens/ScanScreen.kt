@@ -1,6 +1,12 @@
 package com.example.ui.screens
 
 import android.Manifest
+import java.io.File
+import androidx.core.content.FileProvider
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
+import android.content.Context
 import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -125,29 +131,45 @@ fun ScanScreen(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Camera launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            onImageCaptured(bitmap)
+    // Temp photo file for full-resolution camera capture
+    val tempPhotoFile = remember {
+        File(context.cacheDir, "captured_waste_image.jpg")
+    }
+    val tempPhotoUri = remember {
+        try {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                tempPhotoFile
+            )
+        } catch (e: Exception) {
+            null
         }
     }
 
-    // Photo picker launcher (Android Zero-Permission Photo Picker)
+    // High-resolution camera launcher (Full image with EXIF orientation correction)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoFile.exists()) {
+            val bitmap = decodeAndRotateBitmap(context, Uri.fromFile(tempPhotoFile))
+            if (bitmap != null) {
+                onImageCaptured(bitmap)
+            } else {
+                Toast.makeText(context, "写真の読み込みに失敗しました", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Photo picker launcher (Android Zero-Permission Photo Picker with EXIF correction)
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
+            val bitmap = decodeAndRotateBitmap(context, uri)
+            if (bitmap != null) {
                 onImageCaptured(bitmap)
-            } catch (e: Exception) {
+            } else {
                 Toast.makeText(context, "画像の読み込みに失敗しました", Toast.LENGTH_SHORT).show()
             }
         }
@@ -155,8 +177,12 @@ fun ScanScreen(
 
     // Safe camera launch helper with graceful fallback
     fun tryLaunchCamera() {
+        if (tempPhotoUri == null) {
+            Toast.makeText(context, "カメラ領域の初期化に失敗しました。写真選択をお試しください。", Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
-            cameraLauncher.launch(null)
+            cameraLauncher.launch(tempPhotoUri)
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(
                 context,
@@ -1037,5 +1063,82 @@ fun ScanScreen(
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+
+/**
+ * Decode bitmap from Uri at high resolution (up to maxDimension) and correct EXIF rotation
+ */
+private fun decodeAndRotateBitmap(context: Context, uri: Uri, maxDimension: Int = 1280): Bitmap? {
+    return try {
+        // 1. Determine EXIF rotation angle
+        val orientation = try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val exif = ExifInterface(stream)
+                exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            } ?: ExifInterface.ORIENTATION_NORMAL
+        } catch (_: Exception) {
+            ExifInterface.ORIENTATION_NORMAL
+        }
+
+        val rotationDegrees = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+
+        // 2. Read dimensions for efficient subsampling
+        val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, boundsOptions)
+        }
+        val origW = boundsOptions.outWidth
+        val origH = boundsOptions.outHeight
+        if (origW <= 0 || origH <= 0) return null
+
+        var inSampleSize = 1
+        var w = origW
+        var h = origH
+        while (w / 2 >= maxDimension || h / 2 >= maxDimension) {
+            w /= 2
+            h /= 2
+            inSampleSize *= 2
+        }
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            this.inSampleSize = inSampleSize
+        }
+        val rawBitmap = context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, decodeOptions)
+        } ?: return null
+
+        // 3. Apply rotation if needed
+        val rotatedBitmap = if (rotationDegrees != 0f) {
+            val matrix = Matrix().apply { postRotate(rotationDegrees) }
+            Bitmap.createBitmap(rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true)
+        } else {
+            rawBitmap
+        }
+
+        // 4. Scale to maxDimension if still larger
+        if (rotatedBitmap.width > maxDimension || rotatedBitmap.height > maxDimension) {
+            val ratio = rotatedBitmap.width.toFloat() / rotatedBitmap.height.toFloat()
+            val targetW: Int
+            val targetH: Int
+            if (rotatedBitmap.width > rotatedBitmap.height) {
+                targetW = maxDimension
+                targetH = (maxDimension / ratio).toInt()
+            } else {
+                targetH = maxDimension
+                targetW = (maxDimension * ratio).toInt()
+            }
+            Bitmap.createScaledBitmap(rotatedBitmap, targetW, targetH, true)
+        } else {
+            rotatedBitmap
+        }
+    } catch (e: Exception) {
+        null
     }
 }

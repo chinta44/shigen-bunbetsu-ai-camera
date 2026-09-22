@@ -3,10 +3,26 @@
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-blue.svg)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen.svg)](https://developer.android.com/jetpack/compose)
-[![Version](https://img.shields.io/badge/Version-v1.3.8-orange.svg)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-v1.4.2-orange.svg)](https://github.com/)
 
 カメラで撮影した写真や商品のバーコードから、お住まいの自治体ルールに応じた正しいゴミ・資源の分別区分を瞬時に判定・案内する Android アプリケーションです。  
 自治体ごとの分別基準、公式分別早見表PDFの直接照合、収集カレンダー、指定ごみ袋・粗大ごみ処理シールの実物見本写真ガイド、リサイクル回収拠点案内、GitHub Releases 自動アップデート機能を搭載しています。
+
+---
+
+### 🌟 v1.4.2 アップデートの変更点（2026-09-22）
+1. **📸 カメラフル解像度撮影＆EXIF回転自動補正**
+   - 粗いサムネイルプレビュー（`TakePicturePreview`）を完全撤廃し、カメラのネイティブ解像度で撮影する `TakePicture` に刷新。
+   - 縦向き撮影で被写体が90度横倒しになる問題を解消するため、EXIF orientation を解析して正位置へ自動回転。
+   - 1280pxの高品質スケーリングにより、サンダル・靴のロゴや細部のテクスチャ、商品印字が鮮明にGemini AIへ送られます。
+
+2. **🚫 サイレント誤判定（プラスチックケース化）の完全廃止＆エラー通知**
+   - Gemini API未設定や通信エラーが発生した際に、自動で『プラスチックケース』として判定してしまう構造的欠陥を根絶。
+   - APIキーが未登録の場合は右上の鍵アイコン🔑の設定案内を表示し、通信エラー時は明確なエラー理由を通知。
+
+3. **👟 汎用生活雑貨・履物（サンダル・靴・スニーカー）の認識力強化**
+   - 容器・薬品ボトル偏重のプロンプトを改め、履物（クロックス・サンダル・スニーカー・革靴・長靴等）、衣類、生活雑貨、小型家電を公平かつ高精度に識別。
+   - サンダルや靴などの樹脂・ゴム製履物が「プラスチック資源（容器包装用）」と誤認されるのを防ぎ、自治体の正規分別区分（可燃ごみ／燃やすごみ等）へ的確にルーティング。
 
 ---
 

@@ -9,10 +9,23 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.1"
-    const val CURRENT_VERSION_CODE = 13
+    const val CURRENT_VERSION_NAME = "1.4.2"
+    const val CURRENT_VERSION_CODE = 14
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.2",
+            versionCode = 14,
+            releaseDate = "2026-09-22",
+            title = "高解像度撮影＆EXIF回転補正・エラー透明化・生活雑貨AI認識強化",
+            changes = listOf(
+                "【高解像度フル撮影（TakePicture）】粗いサムネイルプレビュー（TakePicturePreview）を廃止し、カメラのフル解像度撮影＆1280px高品質リサイズへ移行",
+                "【EXIF回転の自動補正】縦向き撮影で被写体が90度横倒しになる問題を解消し、撮影角度に応じて正位置へ自動回転補正",
+                "【サイレント誤判定の根絶】APIキー未設定やAPI通信エラー時に『プラスチックケース』へ自動フォールバックする構造的欠陥を完全廃止し、適切な設定案内とエラー表示を通知",
+                "【汎用不用品・履物・生活雑貨の認識強化】容器・薬品ボトル偏重プロンプトを刷新し、サンダル（クロックス等）・靴・衣類・日用品・小型家電を公平かつ高精度に識別",
+                "【履物（サンダル・靴）の適正分別ルーティング】樹脂製サンダルや靴が誤って『プラスチック資源（容器包装）』に分類されるのを防ぎ、自治体公式ルール（可燃ごみ等）へ的確に誘導"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.1",
             versionCode = 13,

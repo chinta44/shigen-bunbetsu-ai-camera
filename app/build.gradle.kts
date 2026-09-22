@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.gomi.bunbetsu"
     minSdk = 24
     targetSdk = 36
-    versionCode = 13
-    versionName = "1.4.1"
+    versionCode = 14
+    versionName = "1.4.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

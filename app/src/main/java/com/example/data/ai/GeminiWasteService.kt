@@ -66,69 +66,57 @@ class GeminiWasteService {
                 $targetFocusInstruction
 
                 【絶対遵守：多段階推論（Chain-of-Thought）プロセス】
-                画像全体のシルエットだけで早とちりせず、必ず以下の思考手順を踏んで判定してください：
+                特定のジャンル（ボトルや容器など）に偏らず、あらゆる家庭不用品（履物・靴、衣類、日用品、家電、家具、容器包装、危険物等）を客観的・多角的に鑑定してください：
 
-                ■ STEP 1: 画像内の文字・商品ラベル・ロゴの徹底読取（最優先OCR）
-                - パッケージや本体に印字された文字（例: 「虫さされ」「かゆみに」「第2類医薬品」「化粧水」「シャンプー」「マヨネーズ」「スプレー缶」「PET」など）を漏らさず書き出してください。
-                - 【超重要警告】画像内に文字が存在する場合、ボトルのシルエットだけで「飲料ボトル」等と誤認・早とちりすることは厳禁です。文字情報（商品名・医薬品区分・用途）を最優先の根拠として品目を特定してください。
+                ■ STEP 1: 被写体の正確な特定（形状・特徴・ロゴ・印字の総合観察）
+                - 履物・衣類（サンダル、クロックス、スニーカー、長靴、革靴、スリッパ、衣類、タオル等）
+                - 生活雑貨・文具（財布、メガネ、傘、バッグ、時計、おもちゃ、文具等）
+                - 小型家電・電子機器（スマホ、充電器、扇風機、ドライヤー、電子基板、バッテリー機器等）
+                - 容器包装・ボトル（ペットボトル、空き缶、瓶、トレイ、スプレー缶、シャンプー・薬品容器等）
+                - 家具・金物（フライパン、鍋、収納ケース、椅子、布団等）
+                ※商品名、ブランドロゴ（例：「crocs」「NIKE」等）、型番、注意書きなどの文字・印字がある場合はOCRで正確に読み取り、品名特定の有力な根拠としてください。
 
-                ■ STEP 2: 商品ジャンルと用途の確定
-                - 医薬品（外用液・軟膏・目薬等）、化粧品、食品、洗剤、日用品、小型家電、文具等のジャンルを正確に特定します。
+                ■ STEP 2: 主たる素材・構造の判定
+                - 素材（EVA樹脂・ゴム、皮革、布、プラスチック、金属、ガラス、陶器等）
+                - 複合製品の場合は、分解が必要なパーツ（本体、フタ、中栓、残った中身、バッテリー等）を特定します。
 
-                ■ STEP 3: 構成パーツ・素材の分解（Parts Breakdown）
-                - 複合製品はパーツに分解してください：
-                  1. 本体容器（素材: プラスチック、金属、ガラス、陶器等）
-                  2. キャップ・フタ（素材: プラスチック、金属等）
-                  3. 中栓・ノズル・塗布部（スポンジ、ポンプ、パッキン等）
-                  4. 残った中身（薬品、油、飲料、ガス等）
-
-                ■ STEP 4: 自治体の公式分別ルールの適用
-                  - 医薬品残液：下水に流さず、不要な布や紙に吸わせて「可燃ごみ」
-                  - プラスチック製外用薬・シャンプー容器（プラマーク有）：水洗いして「プラスチック資源」
-                  - スポンジ塗布ヘッド：外せれば「可燃ごみ」、外れなければ本体ごと「プラスチック資源」
-                  - ステンレス水筒・金属ボトル：本体は「不燃ごみ・金属類」、プラ蓋・パッキンは外して「プラスチック資源」
-                  - スプレー缶・カセットボンベ：中身使い切り、火気のない屋外でガス抜きし、穴あけ不要で「有害危険物」または「不燃ごみ」
+                ■ STEP 3: 自治体公式分別ルールの適用（重要基準）
+                - 履物・靴類（サンダル・クロックス・スニーカー・革靴・長靴等）：
+                  一般に【可燃ごみ（燃やすごみ）】（指定袋に入るサイズ）。
+                  ※【超重要警告】EVA樹脂やプラスチック製サンダルであっても、「容器包装プラスチック」ではないため、原則として資源プラではなく「可燃ごみ」になります。誤ってプラスチック資源に分類しないでください。
+                - 衣類・布類：【可燃ごみ】または資源古布（自治体ルールによる）
+                - 小型家電・バッテリー内蔵機器：火災防止のため市役所等の【小型家電回収ボックス】または不燃ごみ
+                - ステンレス水筒・金属製品：本体は【不燃ごみ・金属類】、プラ蓋やパッキンは【プラスチック資源】
+                - スプレー缶・カセットボンベ：中身使い切り、火気のない屋外でガス抜きし【有害危険物】または【不燃ごみ】
+                - プラスチック製容器包装（プラマーク有）：水洗いして【プラスチック資源】
+                - 医薬品・化粧品容器：残液は紙に吸わせて【可燃ごみ】、ボトル本体は素材に応じて分別
 
                 もし材質や大きさによって自治体の分別区分が分かれる場合は「isAmbiguous: true」とし、ユーザーに尋ねるべき追加質問を1〜2個生成してください。
 
                 必ず以下のJSONフォーマットのみで回答してください：
                 {
-                  "detectedTexts": ["画像から読み取った文字1", "文字2（商品名・用途など）"],
-                  "itemName": "判定した正確な品名（例：虫さされ・かゆみ止め外用薬ボトル、ステンレス水筒、プラスチックケース）",
+                  "detectedTexts": ["画像から読み取った文字・ブランド・ロゴ（例: crocs, 虫さされ, 型番等）"],
+                  "itemName": "判定した正確な品名（例: クロックス（EVA樹脂製サンダル）、スニーカー、ステンレス水筒、虫さされ外用薬ボトル）",
                   "confidenceScore": 95,
                   "isAmbiguous": false,
-                  "categoryHint": "プラスチック資源 または 不燃ごみ または 可燃ごみ または 粗大ごみ または 有害危険物 または ペットボトル または 空き缶・空き瓶 または 小型家電",
-                  "reason": "読み取った文字と主たる材質に基づく判定根拠（例：ラベルの『虫さされ・かゆみに』の印字から外用医薬品容器と特定。主たる素材はプラスチック製容器包装です）",
-                  "disposalAdvice": "捨て方の具体的な手順（例: 中身の残液は紙に吸わせて可燃ごみへ。ボトル本体とキャップは軽く水ですすいでプラスチック資源へ。スポンジ栓は外せれば可燃ごみへ）",
+                  "categoryHint": "可燃ごみ または プラスチック資源 または 不燃ごみ または 粗大ごみ または 有害危険物 または 小型家電 または ペットボトル または 空き缶・空き瓶",
+                  "reason": "読み取った特徴と材質に基づく判定根拠（例: 通気孔とヒールストラップの特徴からクロックス型サンダルと特定。素材はEVA樹脂ですが容器包装ではないため、この自治体では可燃ごみとなります）",
+                  "disposalAdvice": "捨て方の具体的な手順",
                   "partsBreakdown": [
                     {
-                      "partName": "ボトル本体・キャップ",
-                      "material": "プラスチック",
-                      "categoryName": "プラスチック資源",
-                      "disposalMethod": "軽く水ですすいで指定プラ袋へ"
-                    },
-                    {
-                      "partName": "残った薬液・中身",
-                      "material": "液体（医薬品）",
-                      "categoryName": "可燃ごみ",
-                      "disposalMethod": "不要な紙や布に吸わせて可燃袋へ（流しに流さない）"
-                    },
-                    {
-                      "partName": "スポンジ塗布部",
-                      "material": "ウレタン/プラ",
-                      "categoryName": "可燃ごみ（外せる場合）",
-                      "disposalMethod": "外せれば可燃ごみへ、外れなければ本体と一緒にプラ資源へ"
+                      "partName": "パーツ名",
+                      "material": "素材",
+                      "categoryName": "分別区分",
+                      "disposalMethod": "具体的な捨て方"
                     }
                   ],
                   "questions": [
                     {
-                      "id": "material",
-                      "title": "材質の確認",
-                      "question": "材質・素材はどれに当てはまりますか？",
+                      "id": "question_id",
+                      "title": "確認項目",
+                      "question": "質問内容",
                       "options": [
-                        {"id": "hard_plastic", "label": "硬いプラ（タッパー・容器等）"},
-                        {"id": "soft_plastic", "label": "柔らかいプラ（包装用プラマーク等）"},
-                        {"id": "metal_or_mix", "label": "金属製（ステンレス等）"}
+                        {"id": "opt1", "label": "選択肢1"}
                       ]
                     }
                   ]
@@ -165,25 +153,42 @@ class GeminiWasteService {
             // Primary model: gemini-3.8-flash (with seamless fallback to gemini-2.5-flash if 3.8 is not yet accessible in the key's tier)
             val primaryUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$apiKey"
             val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            val legacyFallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
 
-            val primaryRequest = Request.Builder()
-                .url(primaryUrl)
-                .post(requestBody)
-                .build()
+            var response: okhttp3.Response? = null
+            val modelUrls = listOf(primaryUrl, fallbackUrl, legacyFallbackUrl)
+            var lastErrorCode = 0
+            var lastErrorMessage = ""
 
-            var response = client.newCall(primaryRequest).execute()
-            if (!response.isSuccessful && (response.code == 404 || response.code == 400)) {
-                // If gemini-3.8-flash returns 404 or model not found on user API key tier, gracefully try gemini-2.5-flash
-                response.close()
-                val fallbackRequest = Request.Builder()
-                    .url(fallbackUrl)
+            for (url in modelUrls) {
+                val req = Request.Builder()
+                    .url(url)
                     .post(requestBody)
                     .build()
-                response = client.newCall(fallbackRequest).execute()
+                val res = client.newCall(req).execute()
+                if (res.isSuccessful) {
+                    response = res
+                    break
+                } else {
+                    lastErrorCode = res.code
+                    val errorBody = res.body?.string().orEmpty()
+                    res.close()
+                    try {
+                        val errObj = JSONObject(errorBody).optJSONObject("error")
+                        lastErrorMessage = errObj?.optString("message") ?: "HTTP $lastErrorCode"
+                    } catch (_: Exception) {
+                        lastErrorMessage = "HTTP $lastErrorCode: $errorBody"
+                    }
+                    if (res.code != 404 && res.code != 400 && res.code != 429) {
+                        // Unrecoverable non-model error
+                        break
+                    }
+                }
             }
 
-            if (!response.isSuccessful) {
-                return@withContext WasteAiAnalysisResult.Error("APIエラー: ${response.code}")
+            if (response == null || !response.isSuccessful) {
+                val msg = if (lastErrorMessage.isNotBlank()) lastErrorMessage else "APIエラー (code: $lastErrorCode)"
+                return@withContext WasteAiAnalysisResult.Error(msg)
             }
 
             val responseBody = response.body?.string().orEmpty()
