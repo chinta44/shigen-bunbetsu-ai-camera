@@ -150,17 +150,10 @@ class GeminiWasteService {
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
             
-            // Primary model: gemini-3.8-flash (with seamless fallback to gemini-2.5-flash if 3.8 is not yet accessible in the key's tier)
-            val primaryUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$apiKey"
-            val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
-            val legacyFallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
-
             var response: okhttp3.Response? = null
-            val modelUrls = listOf(primaryUrl, fallbackUrl, legacyFallbackUrl)
             var lastErrorCode = 0
             var lastErrorMessage = ""
 
-            // Models to try in order: gemini-2.5-flash (most stable with lowest latency & high capacity) -> gemini-2.0-flash -> gemini-3.8-flash
             val modelList = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.8-flash")
             val modelUrls = modelList.map { "https://generativelanguage.googleapis.com/v1beta/models/$it:generateContent?key=$apiKey" }
 
