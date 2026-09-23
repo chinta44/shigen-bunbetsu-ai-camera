@@ -1,5 +1,20 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material3.TextButton
+
 import android.Manifest
 import java.io.File
 import androidx.core.content.FileProvider
@@ -115,7 +130,7 @@ fun ScanScreen(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     onSearchSubmit: (String) -> Unit,
-    onImageCaptured: (Bitmap) -> Unit,
+    onImageCaptured: (Bitmap, String?) -> Unit,
     onOpenBarcodeScanner: () -> Unit,
     onOpenVoiceAssistant: () -> Unit,
     onChangeMunicipality: () -> Unit,
@@ -158,7 +173,7 @@ fun ScanScreen(
         if (success && tempPhotoFile.exists()) {
             val bitmap = decodeAndRotateBitmap(context, Uri.fromFile(tempPhotoFile))
             if (bitmap != null) {
-                onImageCaptured(bitmap)
+                onImageCaptured(bitmap, null)
             } else {
                 Toast.makeText(context, "写真の読み込みに失敗しました", Toast.LENGTH_SHORT).show()
             }
@@ -172,7 +187,7 @@ fun ScanScreen(
         if (uri != null) {
             val bitmap = decodeAndRotateBitmap(context, uri)
             if (bitmap != null) {
-                onImageCaptured(bitmap)
+                onImageCaptured(bitmap, null)
             } else {
                 Toast.makeText(context, "画像の読み込みに失敗しました", Toast.LENGTH_SHORT).show()
             }
@@ -633,8 +648,35 @@ fun ScanScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Image preview if any with Re-analyze and Clear buttons
+                // Image preview if any with Tap-to-Target, Re-analyze and Clear buttons
                 if (currentBitmap != null) {
+                    var targetTapOffset by remember(currentBitmap) { mutableStateOf<Offset?>(null) }
+
+                    // Pulsing animation for the target reticle
+                    val infiniteTransition = rememberInfiniteTransition(label = "target_reticle")
+                    val pulseScale by infiniteTransition.animateFloat(
+                        initialValue = 1.0f,
+                        targetValue = 1.35f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(900, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "pulse_scale"
+                    )
+                    val pulseAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.85f,
+                        targetValue = 0.35f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(900, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "pulse_alpha"
+                    )
+
+                    val imgWidth = currentBitmap.width.toFloat().coerceAtLeast(1f)
+                    val imgHeight = currentBitmap.height.toFloat().coerceAtLeast(1f)
+                    val bitmapAspectRatio = (imgWidth / imgHeight).coerceIn(0.65f, 1.75f)
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -647,24 +689,108 @@ fun ScanScreen(
                             )
                             .padding(8.dp)
                     ) {
-                        Box(
+                        BoxWithConstraints(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(190.dp)
+                                .aspectRatio(bitmapAspectRatio)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                .background(Color.Black)
+                                .pointerInput(currentBitmap) {
+                                    detectTapGestures { tapOffset ->
+                                        val nx = (tapOffset.x / size.width).coerceIn(0.01f, 0.99f)
+                                        val ny = (tapOffset.y / size.height).coerceIn(0.01f, 0.99f)
+                                        targetTapOffset = Offset(nx, ny)
+                                    }
+                                },
                             contentAlignment = Alignment.Center
                         ) {
+                            val boxWidthPx = constraints.maxWidth.toFloat()
+                            val boxHeightPx = constraints.maxHeight.toFloat()
+                            val density = LocalDensity.current
+
                             Image(
                                 bitmap = currentBitmap.asImageBitmap(),
                                 contentDescription = "撮影画像",
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize()
                             )
 
+                            // Target reticle indicator when user tapped
+                            targetTapOffset?.let { pt ->
+                                val targetXPx = pt.x * boxWidthPx
+                                val targetYPx = pt.y * boxHeightPx
+                                val targetXDp = with(density) { targetXPx.toDp() }
+                                val targetYDp = with(density) { targetYPx.toDp() }
+
+                                // Pulsing outer ring
+                                Box(
+                                    modifier = Modifier
+                                        .offset(
+                                            x = targetXDp - (24 * pulseScale).dp,
+                                            y = targetYDp - (24 * pulseScale).dp
+                                        )
+                                        .size((48 * pulseScale).dp)
+                                        .border(
+                                            width = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha),
+                                            shape = CircleShape
+                                        )
+                                )
+
+                                // Inner crosshair circle
+                                Box(
+                                    modifier = Modifier
+                                        .offset(
+                                            x = targetXDp - 15.dp,
+                                            y = targetYDp - 15.dp
+                                        )
+                                        .size(30.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                            shape = CircleShape
+                                        )
+                                        .border(
+                                            width = 2.dp,
+                                            color = Color.White,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .background(Color.White, CircleShape)
+                                    )
+                                }
+
+                                // Small floating badge
+                                val badgeYDp = if (pt.y < 0.18f) targetYDp + 20.dp else targetYDp - 36.dp
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color.Black.copy(alpha = 0.8f),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)),
+                                    shadowElevation = 4.dp,
+                                    modifier = Modifier.offset(
+                                        x = (targetXDp - 38.dp).coerceIn(4.dp, (with(density) { boxWidthPx.toDp() } - 85.dp).coerceAtLeast(4.dp)),
+                                        y = badgeYDp.coerceIn(4.dp, (with(density) { boxHeightPx.toDp() } - 28.dp).coerceAtLeast(4.dp))
+                                    )
+                                ) {
+                                    Text(
+                                        text = "🎯 判定対象",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
                             // Clear button on top-right
                             IconButton(
-                                onClick = { onClearImage() },
+                                onClick = {
+                                    targetTapOffset = null
+                                    onClearImage()
+                                },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(6.dp)
@@ -683,15 +809,106 @@ fun ScanScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Re-analyze button with this current photo
+                        // Hint / status row for tap selection
+                        if (targetTapOffset == null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CenterFocusStrong,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "写真をタップすると、その位置の物をピンポイント指定できます",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            val pt = targetTapOffset!!
+                            val hDesc = when {
+                                pt.x < 0.33f -> "左側"
+                                pt.x > 0.67f -> "右側"
+                                else -> "中央"
+                            }
+                            val vDesc = when {
+                                pt.y < 0.33f -> "上部"
+                                pt.y > 0.67f -> "下部"
+                                else -> "中央"
+                            }
+                            val posDesc = if (hDesc == "中央" && vDesc == "中央") "中央" else "${hDesc}・${vDesc}"
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🎯", fontSize = 13.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "指定位置: 【${posDesc}】 (横${(pt.x * 100).toInt()}%, 縦${(pt.y * 100).toInt()}%)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { targetTapOffset = null },
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(26.dp)
+                                ) {
+                                    Text("ピン解除", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Re-analyze button
+                        val buttonText = if (targetTapOffset != null) {
+                            val pt = targetTapOffset!!
+                            val h = when { pt.x < 0.33f -> "左側"; pt.x > 0.67f -> "右側"; else -> "中央" }
+                            val v = when { pt.y < 0.33f -> "上部"; pt.y > 0.67f -> "下部"; else -> "中央" }
+                            val p = if (h == "中央" && v == "中央") "中央" else "${h}・${v}"
+                            "🎯 指定した物体（${p}）を判定する"
+                        } else {
+                            "🔄 この写真で再判定する"
+                        }
+
                         Button(
-                            onClick = { onImageCaptured(currentBitmap) },
+                            onClick = {
+                                val customHint = if (targetTapOffset != null) {
+                                    val pt = targetTapOffset!!
+                                    val h = when { pt.x < 0.33f -> "左側"; pt.x > 0.67f -> "右側"; else -> "中央" }
+                                    val v = when { pt.y < 0.33f -> "上部"; pt.y > 0.67f -> "下部"; else -> "中央" }
+                                    val p = if (h == "中央" && v == "中央") "画面中央" else "画面の${h}・${v}"
+                                    val spatial = "写真内のタップ指定位置: 【${p}】（横から約${(pt.x * 100).toInt()}%、上から約${(pt.y * 100).toInt()}%の位置にある被写体）"
+                                    if (targetItemHint.isNotBlank()) "$spatial [指定補足: $targetItemHint]" else spatial
+                                } else {
+                                    targetItemHint.ifBlank { null }
+                                }
+                                onImageCaptured(currentBitmap, customHint)
+                            },
                             enabled = !isAnalyzing,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp)
+                                .height(50.dp)
                                 .testTag("reanalyze_photo_button"),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
@@ -699,15 +916,15 @@ fun ScanScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Refresh,
+                                imageVector = if (targetTapOffset != null) Icons.Default.CenterFocusStrong else Icons.Default.Refresh,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "この写真で再判定する",
+                                text = buttonText,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
+                                fontSize = 14.sp
                             )
                         }
                     }
@@ -830,7 +1047,7 @@ fun ScanScreen(
                                         .clip(RoundedCornerShape(8.dp))
                                         .clickable {
                                             val bmp = SampleWasteBitmapGenerator.createSampleBitmap(sampleName, colorInt)
-                                            onImageCaptured(bmp)
+                                            onImageCaptured(bmp, null)
                                         },
                                     color = MaterialTheme.colorScheme.surface,
                                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)

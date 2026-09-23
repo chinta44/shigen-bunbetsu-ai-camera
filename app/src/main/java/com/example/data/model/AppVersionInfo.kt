@@ -9,10 +9,22 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.4"
-    const val CURRENT_VERSION_CODE = 17
+    const val CURRENT_VERSION_NAME = "1.4.5"
+    const val CURRENT_VERSION_CODE = 18
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.5",
+            versionCode = 18,
+            releaseDate = "2026-09-23",
+            title = "写真タップによる特定物体のピンポイント指定＆AI分別",
+            changes = listOf(
+                "【写真タップ判定機能】写真の中に複数の物体が写っている場合、写真を直接タップして指差し（ピン留め）するだけで、その物体だけをピンポイントで分別判定",
+                "【リアルタイム照準アニメーション】タップした位置に照準リング（ターゲットレティクル）と『🎯 判定対象』バッジを動的表示",
+                "【Gemini空間推論（Spatial Grounding）連携】タップした座標（左右・上下・比率）をAIが直接解釈し、周囲の他の物体や背景を完全に除外して回答",
+                "【ピンの自由変更＆ワンタップ解除】写真を再タップして位置を変更したり、『ピン解除』で全体判定に戻す操作もシームレスに対応"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.4",
             versionCode = 17,

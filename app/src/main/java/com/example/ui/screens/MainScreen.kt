@@ -284,7 +284,7 @@ fun MainScreen(viewModel: GarbageViewModel) {
                     searchQuery = searchQuery,
                     onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                     onSearchSubmit = { viewModel.analyzeKeyword(it) },
-                    onImageCaptured = { viewModel.analyzeImage(it, targetItemHint) },
+                    onImageCaptured = { bmp, hint -> viewModel.analyzeImage(bmp, hint ?: targetItemHint) },
                     onOpenBarcodeScanner = { viewModel.openBarcodeScanner() },
                     onOpenVoiceAssistant = { viewModel.openVoiceAssistant() },
                     onChangeMunicipality = { viewModel.openMunicipalityPicker() },

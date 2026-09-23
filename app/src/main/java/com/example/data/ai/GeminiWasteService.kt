@@ -53,7 +53,7 @@ class GeminiWasteService {
             val base64Image = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
 
             val targetFocusInstruction = if (!targetItemHint.isNullOrBlank()) {
-                "\n【最重要指示】画面内に複数の物体が写っている場合、ユーザーが指定した対象「$targetItemHint」または指定枠内の物体を特定・分別してください。他の物や背景は無視してください。"
+                "\n【最重要指示：特定被写体のピンポイント指定】\nユーザーが写真内の特定の対象物体（または写真上の位置をタップ指定）を指定しています：「$targetItemHint」。\n写真の中に複数の物体（例：別の場所にあるトイレットペーパー、ケーブル、容器、家電など）が写っている場合であっても、必ずこの指定された位置・物体のみに100%焦点を絞って品名と分別ルールを鑑定してください。指定外の物体や周囲の物は一切無視して回答してください。"
             } else {
                 "\n画面内に複数の物体が写っている場合は、中央または最も手前にある代表的な不用品1点を特定してください。"
             }
