@@ -53,6 +53,9 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
@@ -126,7 +129,8 @@ fun ScanScreen(
     onToggleHaptics: () -> Unit = {},
     onToggleSound: () -> Unit = {},
     targetItemHint: String = "",
-    onTargetItemHintChanged: (String) -> Unit = {}
+    onTargetItemHintChanged: (String) -> Unit = {},
+    onClearImage: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -629,22 +633,83 @@ fun ScanScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Image preview if any
+                // Image preview if any with Re-analyze and Clear buttons
                 if (currentBitmap != null) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(8.dp)
                     ) {
-                        Image(
-                            bitmap = currentBitmap.asImageBitmap(),
-                            contentDescription = "撮影画像",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(190.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = currentBitmap.asImageBitmap(),
+                                contentDescription = "撮影画像",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            // Clear button on top-right
+                            IconButton(
+                                onClick = { onClearImage() },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(6.dp)
+                                    .size(32.dp)
+                                    .background(
+                                        color = Color.Black.copy(alpha = 0.65f),
+                                        shape = CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "写真を削除",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Re-analyze button with this current photo
+                        Button(
+                            onClick = { onImageCaptured(currentBitmap) },
+                            enabled = !isAnalyzing,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("reanalyze_photo_button"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "この写真で再判定する",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(14.dp))
                 }

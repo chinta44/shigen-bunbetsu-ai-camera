@@ -9,10 +9,21 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.3"
-    const val CURRENT_VERSION_CODE = 16
+    const val CURRENT_VERSION_NAME = "1.4.4"
+    const val CURRENT_VERSION_CODE = 17
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.4",
+            versionCode = 17,
+            releaseDate = "2026-09-23",
+            title = "撮影写真のワンタップ再判定＆画像クリア機能追加",
+            changes = listOf(
+                "【この写真で再判定するボタン】撮影後や判定失敗時、写真を撮り直すことなく同じ画像でワンタップ再判定できる機能を追加",
+                "【指定物変更からのシームレス再判定】撮影した写真を見ながら『判定したい物を指定（小型家電、リモコン等）』を変更し、そのまま即座に再推論が可能",
+                "【写真のクリア（✕）ボタン】プレビュー画像の右上に削除ボタンを配置し、別の被写体にワンタップで切り替え可能"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.3",
             versionCode = 16,

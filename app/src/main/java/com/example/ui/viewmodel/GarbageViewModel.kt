@@ -287,6 +287,10 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
         _isVersionDialogOpen.value = false
     }
 
+    fun clearCurrentBitmap() {
+        _currentBitmap.value = null
+    }
+
     /**
      * Process an image taken from camera or gallery
      */

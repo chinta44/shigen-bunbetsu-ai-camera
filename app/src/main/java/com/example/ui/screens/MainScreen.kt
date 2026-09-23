@@ -305,7 +305,8 @@ fun MainScreen(viewModel: GarbageViewModel) {
                     onToggleHaptics = { viewModel.toggleHaptics() },
                     onToggleSound = { viewModel.toggleSound() },
                     targetItemHint = targetItemHint,
-                    onTargetItemHintChanged = { viewModel.setTargetItemHint(it) }
+                    onTargetItemHintChanged = { viewModel.setTargetItemHint(it) },
+                    onClearImage = { viewModel.clearCurrentBitmap() }
                 )
                 1 -> CalendarScreen(
                     municipality = currentMunicipality,
