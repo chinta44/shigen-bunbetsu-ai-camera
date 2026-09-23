@@ -3,10 +3,17 @@
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-blue.svg)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen.svg)](https://developer.android.com/jetpack/compose)
-[![Version](https://img.shields.io/badge/Version-v1.4.2-orange.svg)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-v1.4.3-orange.svg)](https://github.com/)
 
 カメラで撮影した写真や商品のバーコードから、お住まいの自治体ルールに応じた正しいゴミ・資源の分別区分を瞬時に判定・案内する Android アプリケーションです。  
 自治体ごとの分別基準、公式分別早見表PDFの直接照合、収集カレンダー、指定ごみ袋・粗大ごみ処理シールの実物見本写真ガイド、リサイクル回収拠点案内、GitHub Releases 自動アップデート機能を搭載しています。
+
+---
+
+### 🛡️ v1.4.3 アップデートの変更点（2026-09-23）
+1. **Google Gemini サーバー混雑（HTTP 503 High Demand）エラーの自動回避**
+   - 「This model is currently experiencing high demand. Please try again later.」発生時に、停止せずより安定した別モデルへシームレスに自動フォールバック。
+   - `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-3.8-flash` の順で接続し、高負荷時間帯でも安定して即時判定を完遂。
 
 ---
 

@@ -10,7 +10,7 @@ data class VersionRelease(
 
 object AppVersionManager {
     const val CURRENT_VERSION_NAME = "1.4.2"
-    const val CURRENT_VERSION_CODE = 14
+    const val CURRENT_VERSION_CODE = 15
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
         VersionRelease(

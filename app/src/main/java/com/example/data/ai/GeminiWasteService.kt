@@ -160,7 +160,11 @@ class GeminiWasteService {
             var lastErrorCode = 0
             var lastErrorMessage = ""
 
-            for (url in modelUrls) {
+            // Models to try in order: gemini-2.5-flash (most stable with lowest latency & high capacity) -> gemini-2.0-flash -> gemini-3.8-flash
+            val modelList = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.8-flash")
+            val modelUrls = modelList.map { "https://generativelanguage.googleapis.com/v1beta/models/$it:generateContent?key=$apiKey" }
+
+            for ((idx, url) in modelUrls.withIndex()) {
                 val req = Request.Builder()
                     .url(url)
                     .post(requestBody)
@@ -179,8 +183,15 @@ class GeminiWasteService {
                     } catch (_: Exception) {
                         lastErrorMessage = "HTTP $lastErrorCode: $errorBody"
                     }
-                    if (res.code != 404 && res.code != 400 && res.code != 429) {
-                        // Unrecoverable non-model error
+
+                    // If error is 503 (high demand), 429 (rate limit), 404 (model not found), or 500 (transient server error),
+                    // continue to next fallback model!
+                    if (res.code == 503 || res.code == 429 || res.code == 404 || res.code == 400 || res.code >= 500) {
+                        // Sleep briefly (200ms) before trying the next fallback model
+                        try { kotlinx.coroutines.delay(200) } catch (_: Exception) {}
+                        continue
+                    } else {
+                        // True unrecoverable error (e.g. 403 invalid API key)
                         break
                     }
                 }
