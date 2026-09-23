@@ -9,10 +9,21 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.2"
-    const val CURRENT_VERSION_CODE = 15
+    const val CURRENT_VERSION_NAME = "1.4.3"
+    const val CURRENT_VERSION_CODE = 16
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.3",
+            versionCode = 16,
+            releaseDate = "2026-09-23",
+            title = "Google Gemini 503混雑エラー自動回避＆高可用性フェイルオーバー",
+            changes = listOf(
+                "【Gemini 503混雑エラー（High Demand）の自動回避】gemini-2.5-flash / 2.0-flash / 3.8-flash への自動フェイルオーバーを実装し、Googleサーバー高負荷時でも判定が止まらない高可用性を実現",
+                "【フル解像度撮影＆EXIF回転自動補正】カメラの全解像度センサー撮影と90度傾き防止の正位置自動補正",
+                "【GitHub Actions 自動ビルド＆自動リリース】クラウドによる最新APK自動生成およびReleases自動配備に対応"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.2",
             versionCode = 14,
