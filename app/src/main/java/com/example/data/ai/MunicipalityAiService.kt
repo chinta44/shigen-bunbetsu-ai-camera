@@ -52,7 +52,7 @@ class MunicipalityAiService {
             return@withContext GeneratedMunicipalityResult(
                 municipality = fallback,
                 isAiGenerated = false,
-                summaryMessage = "標準ルールに基づいてカレンダーと分別基準を初期生成しました（後から微調整可能）。"
+                summaryMessage = "APIキーが未設定のため、標準ルールで仮のカレンダーを生成しました。収集曜日は自治体の公式情報で確認してください（後から微調整可能）。"
             )
         }
 
@@ -97,12 +97,14 @@ class MunicipalityAiService {
                 put("generationConfig", JSONObject().apply {
                     put("temperature", 0.2)
                     put("responseMimeType", "application/json")
+                    put("maxOutputTokens", 1024)
+                    put("thinkingConfig", JSONObject().put("thinkingLevel", "low"))
                 })
             }
 
             val requestBody = jsonPayload.toString().toRequestBody("application/json".toMediaType())
             val primaryUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$apiKey"
-            val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=$apiKey"
 
             val primaryRequest = Request.Builder()
                 .url(primaryUrl)
@@ -110,7 +112,7 @@ class MunicipalityAiService {
                 .build()
 
             var response = client.newCall(primaryRequest).execute()
-            if (!response.isSuccessful && (response.code == 404 || response.code == 400)) {
+            if (!response.isSuccessful) {
                 response.close()
                 val fallbackRequest = Request.Builder()
                     .url(fallbackUrl)
@@ -125,7 +127,7 @@ class MunicipalityAiService {
                 return@withContext GeneratedMunicipalityResult(
                     municipality = fallback,
                     isAiGenerated = false,
-                    summaryMessage = "公式情報をもとにカレンダーを構成しました。"
+                    summaryMessage = "AI生成ができなかったため、標準ルールで仮のカレンダーを構成しました。収集曜日は公式情報で確認してください。"
                 )
             }
 
@@ -138,7 +140,7 @@ class MunicipalityAiService {
 
             if (text.isNullOrBlank()) {
                 val fallback = createSmartFallbackMunicipality(cleanQuery)
-                return@withContext GeneratedMunicipalityResult(fallback, false, "標準ルールでカレンダーを生成しました。")
+                return@withContext GeneratedMunicipalityResult(fallback, false, "標準ルールで仮のカレンダーを生成しました。収集曜日は公式情報で確認してください。")
             }
 
             val cleanJson = text.replace("```json", "").replace("```", "").trim()
@@ -202,7 +204,7 @@ class MunicipalityAiService {
             return@withContext GeneratedMunicipalityResult(
                 municipality = customMunicipality,
                 isAiGenerated = true,
-                summaryMessage = "Gemini AIにより「${name}」の公式分別基準・収集スケジュールを自動設定しました！"
+                summaryMessage = "Gemini AIにより「${name}」の分別基準・収集スケジュールを推定して設定しました。正確な収集曜日は公式情報で確認してください。"
             )
 
         } catch (e: Exception) {
@@ -210,7 +212,7 @@ class MunicipalityAiService {
             return@withContext GeneratedMunicipalityResult(
                 municipality = fallback,
                 isAiGenerated = false,
-                summaryMessage = "「${cleanQuery}」の推奨ルールとカレンダーを適用しました。"
+                summaryMessage = "「${cleanQuery}」の標準ルールで仮のカレンダーを適用しました。収集曜日は公式情報で確認してください。"
             )
         }
     }

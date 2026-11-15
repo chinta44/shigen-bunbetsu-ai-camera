@@ -65,22 +65,12 @@ class GeminiWasteService {
 
                 $targetFocusInstruction
 
-                【絶対遵守：多段階推論（Chain-of-Thought）プロセス】
-                特定のジャンル（ボトルや容器など）に偏らず、あらゆる家庭不用品（履物・靴、衣類、日用品、家電、家具、容器包装、危険物等）を客観的・多角的に鑑定してください：
+                【判定の進め方】
+                1. 被写体を特定する：形状・特徴に加え、商品名・ブランドロゴ（例：「crocs」「NIKE」等）・型番・注意書きなどの文字があれば読み取り、品名特定の根拠にしてください。特定のジャンルに偏らず、履物・衣類・生活雑貨・小型家電・容器包装・家具など家庭不用品全般を対象とします。
+                2. 主たる素材（EVA樹脂・ゴム、皮革、布、プラスチック、金属、ガラス、陶器等）を判定し、複合製品は分解が必要なパーツ（本体、フタ、中栓、残った中身、バッテリー等）に分けてください。
+                3. 下記の分別ルールを適用してください。推論過程は出力せず、結論のみをJSONで返してください。
 
-                ■ STEP 1: 被写体の正確な特定（形状・特徴・ロゴ・印字の総合観察）
-                - 履物・衣類（サンダル、クロックス、スニーカー、長靴、革靴、スリッパ、衣類、タオル等）
-                - 生活雑貨・文具（財布、メガネ、傘、バッグ、時計、おもちゃ、文具等）
-                - 小型家電・電子機器（スマホ、充電器、扇風機、ドライヤー、電子基板、バッテリー機器等）
-                - 容器包装・ボトル（ペットボトル、空き缶、瓶、トレイ、スプレー缶、シャンプー・薬品容器等）
-                - 家具・金物（フライパン、鍋、収納ケース、椅子、布団等）
-                ※商品名、ブランドロゴ（例：「crocs」「NIKE」等）、型番、注意書きなどの文字・印字がある場合はOCRで正確に読み取り、品名特定の有力な根拠としてください。
-
-                ■ STEP 2: 主たる素材・構造の判定
-                - 素材（EVA樹脂・ゴム、皮革、布、プラスチック、金属、ガラス、陶器等）
-                - 複合製品の場合は、分解が必要なパーツ（本体、フタ、中栓、残った中身、バッテリー等）を特定します。
-
-                ■ STEP 3: 自治体公式分別ルールの適用（重要基準）
+                【自治体公式分別ルールの適用（重要基準）】
                 - 履物・靴類（サンダル・クロックス・スニーカー・革靴・長靴等）：
                   一般に【可燃ごみ（燃やすごみ）】（指定袋に入るサイズ）。
                   ※【超重要警告】EVA樹脂やプラスチック製サンダルであっても、「容器包装プラスチック」ではないため、原則として資源プラではなく「可燃ごみ」になります。誤ってプラスチック資源に分類しないでください。
@@ -144,6 +134,8 @@ class GeminiWasteService {
                 val generationConfig = JSONObject().apply {
                     put("responseMimeType", "application/json")
                     put("temperature", 0.2)
+                    put("maxOutputTokens", 2048)
+                    put("thinkingConfig", JSONObject().put("thinkingLevel", "low"))
                 }
                 put("generationConfig", generationConfig)
             }
@@ -154,7 +146,7 @@ class GeminiWasteService {
             var lastErrorCode = 0
             var lastErrorMessage = ""
 
-            val modelList = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.8-flash")
+            val modelList = listOf("gemini-3.5-flash-lite", "gemini-3.8-flash")
             val modelUrls = modelList.map { "https://generativelanguage.googleapis.com/v1beta/models/$it:generateContent?key=$apiKey" }
 
             for ((idx, url) in modelUrls.withIndex()) {
@@ -196,6 +188,7 @@ class GeminiWasteService {
             }
 
             val responseBody = response.body?.string().orEmpty()
+            response.close()
             val jsonRoot = JSONObject(responseBody)
             val candidates = jsonRoot.optJSONArray("candidates")
             val firstCandidate = candidates?.optJSONObject(0)
