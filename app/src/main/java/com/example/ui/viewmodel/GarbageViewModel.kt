@@ -654,7 +654,11 @@ class GarbageViewModel(application: Application) : AndroidViewModel(application)
             _isCheckingUpdate.value = true
             _downloadError.value = null
 
-            val result = AppUpdateManager.checkForUpdate(AppVersionManager.CURRENT_VERSION_NAME)
+            val app = getApplication<Application>()
+            val installedVersion = try {
+                app.packageManager.getPackageInfo(app.packageName, 0).versionName
+            } catch (e: Exception) { null } ?: AppVersionManager.CURRENT_VERSION_NAME
+            val result = AppUpdateManager.checkForUpdate(installedVersion)
             _updateCheckResult.value = result
             _isCheckingUpdate.value = false
 

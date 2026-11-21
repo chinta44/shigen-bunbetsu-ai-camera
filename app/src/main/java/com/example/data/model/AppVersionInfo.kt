@@ -9,10 +9,30 @@ data class VersionRelease(
 )
 
 object AppVersionManager {
-    const val CURRENT_VERSION_NAME = "1.4.5"
-    const val CURRENT_VERSION_CODE = 18
+    const val CURRENT_VERSION_NAME = "1.4.7"
+    const val CURRENT_VERSION_CODE = 20
 
     val VERSION_HISTORY: List<VersionRelease> = listOf(
+        VersionRelease(
+            versionName = "1.4.7",
+            versionCode = 20,
+            releaseDate = "2026-11-21",
+            title = "アップデート通知が繰り返される不具合の修正",
+            changes = listOf(
+                "【アップデート通知の不具合修正】アップデートを適用した後も、新しいバージョンがあると繰り返し通知されてしまう問題を修正（アプリ内バージョン表記の更新漏れが原因でした）",
+                "【アップデート確認の改善】更新確認をアプリ内の固定表記ではなく、実際にインストールされているバージョンで行うよう改善し、同様の不具合が再び起きないようにしました"
+            )
+        ),
+        VersionRelease(
+            versionName = "1.4.6",
+            versionCode = 19,
+            releaseDate = "2026-11-15",
+            title = "AI判定モデルの更新＆高速化・自治体カレンダー生成の改善",
+            changes = listOf(
+                "【画像判定モデルの更新】判定AIを gemini-3.5-flash-lite → gemini-3.8-flash の2段構成に更新し、判定の高速化と安定性向上を図りました",
+                "【自治体カレンダー生成の改善】AI生成に失敗した場合のフォールバック処理を改善し、生成された内容が「推定」「仮のカレンダー」であることを明示するようになりました"
+            )
+        ),
         VersionRelease(
             versionName = "1.4.5",
             versionCode = 18,
